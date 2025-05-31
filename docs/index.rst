@@ -71,4 +71,5 @@ Technical documentation such as :doc:`Toga's API <reference/api/index>`, details
 :doc:`Frequently asked questions </about/faq>`, :doc:`success stories </about/success>`, and other details about Toga as a project.
 
 .. raw:: latex
+
   \let\chapter\oldchapter
