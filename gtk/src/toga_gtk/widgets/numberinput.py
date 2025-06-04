@@ -17,7 +17,10 @@ class NumberInput(Widget):
         self.native.set_adjustment(self.adjustment)
         self.native.set_numeric(True)
 
-        self.native.connect("changed", self.gtk_on_change)
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            self.native.connect("changed", self.gtk_on_change)
+        else:  # pragma: no-cover-if-gtk3:
+            self.native.connect("value-changed", self.gtk_on_change)
 
     def gtk_on_change(self, widget):
         self.interface.on_change()
@@ -65,12 +68,10 @@ class NumberInput(Widget):
 
     def rehint(self):
         if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
-            width = self.native.get_preferred_width()
-            height = self.native.get_preferred_height()
-
-            self.interface.intrinsic.width = at_least(
-                max(self.interface._MIN_WIDTH, width[1])
-            )
-            self.interface.intrinsic.height = height[1]
+            width = self.native.get_preferred_width()[1]
+            height = self.native.get_preferred_height()[1]
         else:  # pragma: no-cover-if-gtk3
-            pass
+            size = self.native.get_preferred_size()[1]
+            width, height = size.width, size.height
+        self.interface.intrinsic.width = at_least(max(self.interface._MIN_WIDTH, width))
+        self.interface.intrinsic.height = height
