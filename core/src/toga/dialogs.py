@@ -1,27 +1,14 @@
 from __future__ import annotations
-
 import asyncio
 from pathlib import Path
 from typing import TYPE_CHECKING, Generic, Literal, TypeVar, Union, overload
-
 from toga.platform import get_platform_factory
-
 if TYPE_CHECKING:
     from toga.window import Window
-
-
-__all__ = [
-    "InfoDialog",
-    "QuestionDialog",
-    "ConfirmDialog",
-    "ErrorDialog",
-    "StackTraceDialog",
-    "SaveFileDialog",
-    "OpenFileDialog",
-    "SelectFolderDialog",
-]
-
-DialogResultT = TypeVar("DialogResultT")
+__all__ = ['InfoDialog', 'QuestionDialog', 'ConfirmDialog', 'ErrorDialog',
+    'StackTraceDialog', 'SaveFileDialog', 'OpenFileDialog',
+    'SelectFolderDialog']
+DialogResultT = TypeVar('DialogResultT')
 
 
 class Dialog(Generic[DialogResultT]):
@@ -32,7 +19,7 @@ class Dialog(Generic[DialogResultT]):
     window-modal dialog), or :meth:`~toga.App.dialog()` for an app-level dialog.
     """
 
-    def _show(self, window: Window | None) -> asyncio.Future[DialogResultT]:
+    def _show(self, window: (Window | None)) ->asyncio.Future[DialogResultT]:
         """Display the dialog and return the user's response.
 
         :param window: The window for which the dialog should be modal; or ``None`` for
@@ -45,7 +32,8 @@ class Dialog(Generic[DialogResultT]):
 
 
 class InfoDialog(Dialog[None]):
-    def __init__(self, title: str, message: str) -> None:
+
+    def __init__(self, title: str, message: str) ->None:
         """Ask the user to acknowledge some information.
 
         Presents as a dialog with a single "OK" button to close the dialog.
@@ -56,11 +44,13 @@ class InfoDialog(Dialog[None]):
         :param message: The message to display.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.InfoDialog(title=title, message=message)
+        self._impl = self.factory.dialogs.InfoDialog(title=title, message=
+            message)
 
 
 class QuestionDialog(Dialog[bool]):
-    def __init__(self, title: str, message: str) -> None:
+
+    def __init__(self, title: str, message: str) ->None:
         """Ask the user a yes/no question.
 
         Presents as a dialog with "Yes" and "No" buttons.
@@ -72,11 +62,13 @@ class QuestionDialog(Dialog[bool]):
         :param message: The question to be answered.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.QuestionDialog(title=title, message=message)
+        self._impl = self.factory.dialogs.QuestionDialog(title=title,
+            message=message)
 
 
 class ConfirmDialog(Dialog[bool]):
-    def __init__(self, title: str, message: str) -> None:
+
+    def __init__(self, title: str, message: str) ->None:
         """Ask the user to confirm if they wish to proceed with an action.
 
         Presents as a dialog with "Cancel" and "OK" buttons (or whatever labels are
@@ -89,11 +81,13 @@ class ConfirmDialog(Dialog[bool]):
         :param message: A message describing the action to be confirmed.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.ConfirmDialog(title=title, message=message)
+        self._impl = self.factory.dialogs.ConfirmDialog(title=title,
+            message=message)
 
 
 class ErrorDialog(Dialog[None]):
-    def __init__(self, title: str, message: str) -> None:
+
+    def __init__(self, title: str, message: str) ->None:
         """Ask the user to acknowledge an error state.
 
         Presents as an error dialog with an "OK" button to close the dialog.
@@ -104,31 +98,24 @@ class ErrorDialog(Dialog[None]):
         :param message: The error message to display.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.ErrorDialog(title=title, message=message)
+        self._impl = self.factory.dialogs.ErrorDialog(title=title, message=
+            message)
 
 
 class StackTraceDialog(Dialog[DialogResultT]):
-    @overload
-    def __init__(
-        self: StackTraceDialog[None],
-        title: str,
-        message: str,
-        content: str,
-        retry: Literal[False] = ...,
-    ) -> None: ...
 
     @overload
-    def __init__(
-        self: StackTraceDialog[bool],
-        title: str,
-        message: str,
-        content: str,
-        retry: Literal[True],
-    ) -> None: ...
+    def __init__(self: StackTraceDialog[None], title: str, message: str,
+        content: str, retry: Literal[False]=...) ->None:
+        ...
 
-    def __init__(
-        self, title: str, message: str, content: str, retry: bool = False
-    ) -> None:
+    @overload
+    def __init__(self: StackTraceDialog[bool], title: str, message: str,
+        content: str, retry: Literal[True]) ->None:
+        ...
+
+    def __init__(self, title: str, message: str, content: str, retry: bool=
+        False) ->None:
         """Open a dialog to display a large block of text, such as a stack trace.
 
         If ``retry`` is true, returns a response of ``True`` when the user selects
@@ -143,21 +130,14 @@ class StackTraceDialog(Dialog[DialogResultT]):
             false, a single option to acknowledge the error will be displayed.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.StackTraceDialog(
-            title=title,
-            message=message,
-            content=content,
-            retry=retry,
-        )
+        self._impl = self.factory.dialogs.StackTraceDialog(title=title,
+            message=message, content=content, retry=retry)
 
 
 class SaveFileDialog(Dialog[Union[Path, None]]):
-    def __init__(
-        self,
-        title: str,
-        suggested_filename: Path | str,
-        file_types: list[str] | None = None,
-    ) -> None:
+
+    def __init__(self, title: str, suggested_filename: (Path | str),
+        file_types: (list[str] | None)=None) ->None:
         """Prompt the user for a location to save a file.
 
         This dialog is not currently supported on Android or iOS.
@@ -173,50 +153,34 @@ class SaveFileDialog(Dialog[Union[Path, None]]):
         :param file_types: The allowed filename extensions, without leading dots. If not
             provided, any extension will be allowed.
         """
-        # Convert suggested filename to a path (if it isn't already),
-        # and break it into a filename and a directory
         suggested_path = Path(suggested_filename)
         initial_directory: Path | None = suggested_path.parent
-        if initial_directory == Path("."):
+        if initial_directory == Path('.'):
             initial_directory = None
         filename = suggested_path.name
-
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.SaveFileDialog(
-            title=title,
-            filename=filename,
-            initial_directory=initial_directory,
-            file_types=file_types,
-        )
+        self._impl = self.factory.dialogs.SaveFileDialog(title=title,
+            filename=filename, initial_directory=initial_directory,
+            file_types=file_types)
 
 
 class OpenFileDialog(Dialog[DialogResultT]):
-    @overload
-    def __init__(
-        self: OpenFileDialog[Path],
-        title: str,
-        initial_directory: Path | str | None = None,
-        file_types: list[str] | None = None,
-        multiple_select: Literal[False] = ...,
-    ) -> None: ...
 
     @overload
-    def __init__(
-        self: OpenFileDialog[list[Path]],
-        title: str,
-        initial_directory: Path | str | None = None,
-        file_types: list[str] | None = None,
-        *,
-        multiple_select: Literal[True],
-    ) -> None: ...
+    def __init__(self: OpenFileDialog[Path], title: str, initial_directory:
+        (Path | str | None)=None, file_types: (list[str] | None)=None,
+        multiple_select: Literal[False]=...) ->None:
+        ...
 
-    def __init__(
-        self,
-        title: str,
-        initial_directory: Path | str | None = None,
-        file_types: list[str] | None = None,
-        multiple_select: bool = False,
-    ) -> None:
+    @overload
+    def __init__(self: OpenFileDialog[list[Path]], title: str,
+        initial_directory: (Path | str | None)=None, file_types: (list[str] |
+        None)=None, *, multiple_select: Literal[True]) ->None:
+        ...
+
+    def __init__(self, title: str, initial_directory: (Path | str | None)=
+        None, file_types: (list[str] | None)=None, multiple_select: bool=False
+        ) ->None:
         """Prompt the user to select a file (or files) to open.
 
         This dialog is not currently supported on Android or iOS.
@@ -237,38 +201,27 @@ class OpenFileDialog(Dialog[DialogResultT]):
             if False, the selection will be restricted to a single file.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.OpenFileDialog(
-            title=title,
-            initial_directory=Path(initial_directory) if initial_directory else None,
-            file_types=file_types,
-            multiple_select=multiple_select,
-        )
+        self._impl = self.factory.dialogs.OpenFileDialog(title=title,
+            initial_directory=Path(initial_directory) if initial_directory else
+            None, file_types=file_types, multiple_select=multiple_select)
 
 
 class SelectFolderDialog(Dialog[DialogResultT]):
-    @overload
-    def __init__(
-        self: SelectFolderDialog[Path],
-        title: str,
-        initial_directory: Path | str | None = None,
-        multiple_select: Literal[False] = ...,
-    ) -> None: ...
 
     @overload
-    def __init__(
-        self: SelectFolderDialog[list[Path]],
-        title: str,
-        initial_directory: Path | str | None = None,
-        *,
-        multiple_select: Literal[True],
-    ) -> None: ...
+    def __init__(self: SelectFolderDialog[Path], title: str,
+        initial_directory: (Path | str | None)=None, multiple_select:
+        Literal[False]=...) ->None:
+        ...
 
-    def __init__(
-        self,
-        title: str,
-        initial_directory: Path | str | None = None,
-        multiple_select: bool = False,
-    ) -> None:
+    @overload
+    def __init__(self: SelectFolderDialog[list[Path]], title: str,
+        initial_directory: (Path | str | None)=None, *, multiple_select:
+        Literal[True]) ->None:
+        ...
+
+    def __init__(self, title: str, initial_directory: (Path | str | None)=
+        None, multiple_select: bool=False) ->None:
         """Prompt the user to select a directory (or directories).
 
         This dialog is not currently supported on Android or iOS.
@@ -288,8 +241,6 @@ class SelectFolderDialog(Dialog[DialogResultT]):
             directory. This option is not supported on WinForms.
         """
         self.factory = get_platform_factory()
-        self._impl = self.factory.dialogs.SelectFolderDialog(
-            title=title,
-            initial_directory=Path(initial_directory) if initial_directory else None,
-            multiple_select=multiple_select,
-        )
+        self._impl = self.factory.dialogs.SelectFolderDialog(title=title,
+            initial_directory=Path(initial_directory) if initial_directory else
+            None, multiple_select=multiple_select)

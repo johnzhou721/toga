@@ -1,13 +1,11 @@
 from __future__ import annotations
-
 import re
 from collections.abc import Iterable, Mapping
+NON_ACCESSOR_CHARS = re.compile('[^\\w ]')
+WHITESPACE = re.compile('\\s+')
 
-NON_ACCESSOR_CHARS = re.compile(r"[^\w ]")
-WHITESPACE = re.compile(r"\s+")
 
-
-def to_accessor(heading: str) -> str:
+def to_accessor(heading: str) ->str:
     """Convert a human-readable heading into a data attribute accessor.
 
     This is done by:
@@ -29,26 +27,22 @@ def to_accessor(heading: str) -> str:
     :returns: The accessor derived from the heading.
     :raises ValueError: If the heading cannot be converted into an accessor.
     """
-    value = WHITESPACE.sub(
-        " ",
-        NON_ACCESSOR_CHARS.sub("", heading.lower()),
-    ).replace(" ", "_")
-
+    value = WHITESPACE.sub(' ', NON_ACCESSOR_CHARS.sub('', heading.lower())
+        ).replace(' ', '_')
     try:
         if value[0].isdigit():
-            value = f"_{value}"
+            value = f'_{value}'
     except IndexError as exc:
         raise ValueError(
-            f"Unable to automatically generate accessor from heading {heading!r}."
-        ) from exc
-
+            f'Unable to automatically generate accessor from heading {heading!r}.'
+            ) from exc
+    else:
+        pass
     return value
 
 
-def build_accessors(
-    headings: Iterable[str],
-    accessors: Iterable[str | None] | Mapping[str, str] | None,
-) -> list[str]:
+def build_accessors(headings: Iterable[str], accessors: (Iterable[str |
+    None] | Mapping[str, str] | None)) ->list[str]:
     """Convert a list of headings (with accessor overrides) to a finalised list of
     accessors.
 
@@ -65,19 +59,15 @@ def build_accessors(
     """
     if accessors is not None:
         if isinstance(accessors, Mapping):
-            result = [
-                accessors[h] if h in accessors else to_accessor(h) for h in headings
-            ]
+            result = [(accessors[h] if h in accessors else to_accessor(h)) for
+                h in headings]
         else:
-            # TODO: use zip(..., strict=True) instead once Python 3.9 support is dropped
-            if len(headings := list(headings)) != len(accessors := list(accessors)):
-                raise ValueError("Number of accessors must match number of headings")
-
-            result = [
-                a if a is not None else to_accessor(h)
-                for h, a in zip(headings, accessors)
-            ]
+            if len((headings := list(headings))) != len((accessors := list(
+                accessors))):
+                raise ValueError(
+                    'Number of accessors must match number of headings')
+            result = [(a if a is not None else to_accessor(h)) for h, a in
+                zip(headings, accessors)]
     else:
         result = [to_accessor(h) for h in headings]
-
     return result

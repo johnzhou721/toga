@@ -1,21 +1,18 @@
 from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import Any, Literal, Protocol, TypeVar
-
 import toga
 from toga.handlers import wrapped_handler
 from toga.sources import Node, Source, TreeSource
 from toga.sources.accessors import build_accessors, to_accessor
 from toga.style import Pack
-
 from .base import Widget
-
-SourceT = TypeVar("SourceT", bound=Source)
+SourceT = TypeVar('SourceT', bound=Source)
 
 
 class OnSelectHandler(Protocol):
-    def __call__(self, widget: Tree, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Tree, **kwargs: Any) ->object:
         """A handler to invoke when the tree is selected.
 
         :param widget: The Tree that was selected.
@@ -24,7 +21,8 @@ class OnSelectHandler(Protocol):
 
 
 class OnActivateHandler(Protocol):
-    def __call__(self, widget: Tree, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Tree, **kwargs: Any) ->object:
         """A handler to invoke when the tree is activated.
 
         :param widget: The Tree that was activated.
@@ -33,19 +31,13 @@ class OnActivateHandler(Protocol):
 
 
 class Tree(Widget):
-    def __init__(
-        self,
-        headings: Iterable[str] | None = None,
-        id: str | None = None,
-        style: Pack | None = None,
-        data: SourceT | object | None = None,
-        accessors: Iterable[str] | None = None,
-        multiple_select: bool = False,
-        on_select: toga.widgets.tree.OnSelectHandler | None = None,
-        on_activate: toga.widgets.tree.OnActivateHandler | None = None,
-        missing_value: str = "",
-        **kwargs,
-    ):
+
+    def __init__(self, headings: (Iterable[str] | None)=None, id: (str |
+        None)=None, style: (Pack | None)=None, data: (SourceT | object |
+        None)=None, accessors: (Iterable[str] | None)=None, multiple_select:
+        bool=False, on_select: (toga.widgets.tree.OnSelectHandler | None)=
+        None, on_activate: (toga.widgets.tree.OnActivateHandler | None)=
+        None, missing_value: str='', **kwargs):
         """Create a new Tree widget.
 
         :param headings: The column headings for the tree. Headings can only contain one
@@ -79,29 +71,22 @@ class Tree(Widget):
         """
         self._headings: list[str] | None
         self._data: SourceT | TreeSource
-
         if headings is not None:
-            self._headings = [heading.split("\n")[0] for heading in headings]
+            self._headings = [heading.split('\n')[0] for heading in headings]
             self._accessors = build_accessors(self._headings, accessors)
         elif accessors is not None:
             self._headings = None
             self._accessors = list(accessors)
         else:
             raise ValueError(
-                "Cannot create a tree without either headings or accessors"
-            )
+                'Cannot create a tree without either headings or accessors')
         self._multiple_select = multiple_select
-        self._missing_value = missing_value or ""
-
-        # Prime some properties that need to exist before the tree is created.
+        self._missing_value = missing_value or ''
         self.on_select = None
         self.on_activate = None
         self._data = None
-
         super().__init__(id, style, **kwargs)
-
         self.data = data
-
         self.on_select = on_select
         self.on_activate = on_activate
 
@@ -109,7 +94,7 @@ class Tree(Widget):
         return self.factory.Tree(interface=self)
 
     @property
-    def enabled(self) -> Literal[True]:
+    def enabled(self) ->Literal[True]:
         """Is the widget currently enabled? i.e., can the user interact with the widget?
         Tree widgets cannot be disabled; this property will always return True; any
         attempt to modify it will be ignored.
@@ -117,15 +102,15 @@ class Tree(Widget):
         return True
 
     @enabled.setter
-    def enabled(self, value: object) -> None:
+    def enabled(self, value: object) ->None:
         pass
 
-    def focus(self) -> None:
+    def focus(self) ->None:
         """No-op; Tree cannot accept input focus."""
         pass
 
     @property
-    def data(self) -> SourceT | TreeSource:
+    def data(self) ->(SourceT | TreeSource):
         """The data to display in the tree.
 
         When setting this property:
@@ -141,24 +126,23 @@ class Tree(Widget):
         return self._data
 
     @data.setter
-    def data(self, data: SourceT | object | None) -> None:
+    def data(self, data: (SourceT | object | None)) ->None:
         if data is None:
             self._data = TreeSource(accessors=self._accessors, data=[])
         elif isinstance(data, Source):
             self._data = data
         else:
             self._data = TreeSource(accessors=self._accessors, data=data)
-
         self._data.add_listener(self._impl)
         self._impl.change_source(source=self._data)
 
     @property
-    def multiple_select(self) -> bool:
+    def multiple_select(self) ->bool:
         """Does the tree allow multiple rows to be selected?"""
         return self._multiple_select
 
     @property
-    def selection(self) -> list[Node] | Node | None:
+    def selection(self) ->(list[Node] | Node | None):
         """The current selection of the tree.
 
         If multiple selection is enabled, returns a list of Node objects from the data
@@ -170,7 +154,7 @@ class Tree(Widget):
         """
         return self._impl.get_selection()
 
-    def expand(self, node: Node | None = None) -> None:
+    def expand(self, node: (Node | None)=None) ->None:
         """Expand the specified node of the tree.
 
         If no node is provided, all nodes of the tree will be expanded.
@@ -187,7 +171,7 @@ class Tree(Widget):
         else:
             self._impl.expand_node(node)
 
-    def collapse(self, node: Node | None = None) -> None:
+    def collapse(self, node: (Node | None)=None) ->None:
         """Collapse the specified node of the tree.
 
         If no node is provided, all nodes of the tree will be collapsed.
@@ -202,7 +186,7 @@ class Tree(Widget):
         else:
             self._impl.collapse_node(node)
 
-    def append_column(self, heading: str, accessor: str | None = None) -> None:
+    def append_column(self, heading: str, accessor: (str | None)=None) ->None:
         """Append a column to the end of the tree.
 
         :param heading: The heading for the new column.
@@ -212,12 +196,8 @@ class Tree(Widget):
         """
         self.insert_column(len(self._accessors), heading, accessor=accessor)
 
-    def insert_column(
-        self,
-        index: int | str,
-        heading: str,
-        accessor: str | None = None,
-    ) -> None:
+    def insert_column(self, index: (int | str), heading: str, accessor: (
+        str | None)=None) ->None:
         """Insert an additional column into the tree.
 
         :param index: The index at which to insert the column, or the accessor of the
@@ -230,79 +210,71 @@ class Tree(Widget):
         """
         if self._headings is None:
             if accessor is None:
-                raise ValueError("Must specify an accessor on a tree without headings")
+                raise ValueError(
+                    'Must specify an accessor on a tree without headings')
             heading = None
         elif not accessor:
             accessor = to_accessor(heading)
-
         if isinstance(index, str):
             index = self._accessors.index(index)
+        elif index < 0:
+            index = max(len(self._accessors) + index, 0)
         else:
-            # Re-interpret negative indices, and clip indices outside valid range.
-            if index < 0:
-                index = max(len(self._accessors) + index, 0)
-            else:
-                index = min(len(self._accessors), index)
-
+            index = min(len(self._accessors), index)
         if self._headings is not None:
             self._headings.insert(index, heading)
         self._accessors.insert(index, accessor)
-
         self._impl.insert_column(index, heading, accessor)
 
-    def remove_column(self, column: int | str) -> None:
+    def remove_column(self, column: (int | str)) ->None:
         """Remove a tree column.
 
         :param column: The index of the column to remove, or the accessor of the column
             to remove.
         """
         if isinstance(column, str):
-            # Column is a string; use as-is
             index = self._accessors.index(column)
+        elif column < 0:
+            index = len(self._accessors) + column
         else:
-            if column < 0:
-                index = len(self._accessors) + column
-            else:
-                index = column
-
-        # Remove column
+            index = column
         if self._headings is not None:
             del self._headings[index]
         del self._accessors[index]
         self._impl.remove_column(index)
 
     @property
-    def headings(self) -> list[str] | None:
+    def headings(self) ->(list[str] | None):
         """The column headings for the tree (read-only)"""
         return self._headings
 
     @property
-    def accessors(self) -> list[str]:
+    def accessors(self) ->list[str]:
         """The accessors used to populate the tree (read-only)"""
         return self._accessors
 
     @property
-    def missing_value(self) -> str:
+    def missing_value(self) ->str:
         """The value that will be used when a data row doesn't provide a value for an
         attribute.
         """
         return self._missing_value
 
     @property
-    def on_select(self) -> OnSelectHandler:
+    def on_select(self) ->OnSelectHandler:
         """The callback function that is invoked when a row of the tree is selected."""
         return self._on_select
 
     @on_select.setter
-    def on_select(self, handler: toga.widgets.tree.OnSelectHandler) -> None:
+    def on_select(self, handler: toga.widgets.tree.OnSelectHandler) ->None:
         self._on_select = wrapped_handler(self, handler)
 
     @property
-    def on_activate(self) -> OnActivateHandler:
+    def on_activate(self) ->OnActivateHandler:
         """The callback function that is invoked when a row of the tree is activated,
         usually with a double click or similar action."""
         return self._on_activate
 
     @on_activate.setter
-    def on_activate(self, handler: toga.widgets.tree.OnActivateHandler) -> None:
+    def on_activate(self, handler: toga.widgets.tree.OnActivateHandler) ->None:
         self._on_activate = wrapped_handler(self, handler)

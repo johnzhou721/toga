@@ -1,23 +1,16 @@
 from __future__ import annotations
-
 import datetime
 from typing import Any, Protocol
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
-
-# This accommodates the ranges of all existing implementations:
-#  * datetime.date: 1 - 9999
-#  * Android: approx 5,800,000 BC - 5,800,000
-#  * Windows: 1753 - 9998
 MIN_DATE = datetime.date(1800, 1, 1)
 MAX_DATE = datetime.date(8999, 12, 31)
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: DateInput, **kwargs: Any) -> object:
+
+    def __call__(self, widget: DateInput, **kwargs: Any) ->object:
         """A handler that will be invoked when a change occurs.
 
         :param widget: The DateInput that was changed.
@@ -28,16 +21,10 @@ class OnChangeHandler(Protocol):
 class DateInput(Widget):
     _MIN_WIDTH = 200
 
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        value: datetime.date | None = None,
-        min: datetime.date | None = None,
-        max: datetime.date | None = None,
-        on_change: toga.widgets.dateinput.OnChangeHandler | None = None,
-        **kwargs,
-    ):
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        value: (datetime.date | None)=None, min: (datetime.date | None)=
+        None, max: (datetime.date | None)=None, on_change: (toga.widgets.
+        dateinput.OnChangeHandler | None)=None, **kwargs):
         """Create a new DateInput widget.
 
         :param id: The ID for the widget.
@@ -51,19 +38,17 @@ class DateInput(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
         self.on_change = None
         self.min = min
         self.max = max
-
         self.value = value
         self.on_change = on_change
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.DateInput(interface=self)
 
     @property
-    def value(self) -> datetime.date:
+    def value(self) ->datetime.date:
         """The currently selected date. A value of ``None`` will be converted into
         today's date.
 
@@ -73,17 +58,16 @@ class DateInput(Widget):
         return self._impl.get_value()
 
     @value.setter
-    def value(self, value: object) -> None:
+    def value(self, value: object) ->None:
         value = self._convert_date(value, check_range=False)
-
         if value < self.min:
             value = self.min
         elif value > self.max:
             value = self.max
-
         self._impl.set_value(value)
 
-    def _convert_date(self, value: object, *, check_range: bool) -> datetime.date:
+    def _convert_date(self, value: object, *, check_range: bool
+        ) ->datetime.date:
         if value is None:
             value = datetime.date.today()
         elif isinstance(value, datetime.datetime):
@@ -93,20 +77,18 @@ class DateInput(Widget):
         elif isinstance(value, str):
             value = datetime.date.fromisoformat(value)
         else:
-            raise TypeError("Not a valid date value")
-
+            raise TypeError('Not a valid date value')
         if check_range:
             if value < MIN_DATE:
-                raise ValueError(f"The lowest supported date is {MIN_DATE.isoformat()}")
+                raise ValueError(
+                    f'The lowest supported date is {MIN_DATE.isoformat()}')
             if value > MAX_DATE:
                 raise ValueError(
-                    f"The highest supported date is {MAX_DATE.isoformat()}"
-                )
-
+                    f'The highest supported date is {MAX_DATE.isoformat()}')
         return value
 
     @property
-    def min(self) -> datetime.date:
+    def min(self) ->datetime.date:
         """The minimum allowable date (inclusive). A value of ``None`` will be converted
         into the lowest supported date of 1800-01-01.
 
@@ -118,12 +100,11 @@ class DateInput(Widget):
         return self._impl.get_min_date()
 
     @min.setter
-    def min(self, value: object) -> None:
+    def min(self, value: object) ->None:
         if value is None:
             min = MIN_DATE
         else:
             min = self._convert_date(value, check_range=True)
-
         if self.max < min:
             self._impl.set_max_date(min)
         self._impl.set_min_date(min)
@@ -131,7 +112,7 @@ class DateInput(Widget):
             self.value = min
 
     @property
-    def max(self) -> datetime.date:
+    def max(self) ->datetime.date:
         """The maximum allowable date (inclusive). A value of ``None`` will be converted
         into the highest supported date of 8999-12-31.
 
@@ -143,12 +124,11 @@ class DateInput(Widget):
         return self._impl.get_max_date()
 
     @max.setter
-    def max(self, value: object) -> None:
+    def max(self, value: object) ->None:
         if value is None:
             max = MAX_DATE
         else:
             max = self._convert_date(value, check_range=True)
-
         if self.min > max:
             self._impl.set_min_date(max)
         self._impl.set_max_date(max)
@@ -156,10 +136,11 @@ class DateInput(Widget):
             self.value = max
 
     @property
-    def on_change(self) -> OnChangeHandler:
+    def on_change(self) ->OnChangeHandler:
         """The handler to invoke when the date value changes."""
         return self._on_change
 
     @on_change.setter
-    def on_change(self, handler: toga.widgets.dateinput.OnChangeHandler) -> None:
+    def on_change(self, handler: toga.widgets.dateinput.OnChangeHandler
+        ) ->None:
         self._on_change = wrapped_handler(self, handler)

@@ -1,78 +1,49 @@
 from __future__ import annotations
-
 import re
 import sys
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 from typing import TYPE_CHECKING, Any, Protocol, Union
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
-
 if TYPE_CHECKING:
     if sys.version_info < (3, 10):
         from typing_extensions import TypeAlias
     else:
         from typing import TypeAlias
-
     NumberInputT: TypeAlias = Union[Decimal, int, float, str]
-
-# Implementation notes
-# ====================
-#
-# * `step`, `min` and `max` maintain an interface shadow copy of
-#   their current values. This is because we use Decimal as a representation,
-#   but all the implementations use floats. To ensure that we can round-trip
-#   step/min/max values, we need to keep a local copy.
-# * Decimal(3.7) yields "3.700000000...177". However, Decimal(str(3.7)) yields
-#   "3.7". If the user provides a float, convert to a string first to ensure
-#   that we don't introduce floating point error.
+NUMERIC_RE = re.compile('[^0-9\\.-]')
 
 
-NUMERIC_RE = re.compile(r"[^0-9\.-]")
-
-
-def _clean_decimal(value: NumberInputT, step: NumberInputT | None = None) -> Decimal:
-    # Decimal(3.7) yields "3.700000000...177".
-    # However, Decimal(str(3.7)) yields "3.7". If the user provides a float,
-    # convert to a string first.
+def _clean_decimal(value: NumberInputT, step: (NumberInputT | None)=None
+    ) ->Decimal:
     if isinstance(value, float):
         value = str(value)
     value = Decimal(value)
-
     if step is not None:
-        # ROUND_DOWN would not be unreasonable for manually-entered strings, but it
-        # interacts badly with native increment operations that use floats. For example,
-        # 1.2 might be incremented to 1.299999997, and then rounded back down to 1.2,
-        # so nothing would change.
         value = value.quantize(step, rounding=ROUND_HALF_UP)
     return value
 
 
-def _clean_decimal_str(value: str) -> str:
+def _clean_decimal_str(value: str) ->str:
     """Clean a string value"""
-    # Replace any character that isn't a number, `.` or `-`
-    value = NUMERIC_RE.sub("", value)
-    # Remove any `-` not at the start of the string
-    pos = value.find("-", 1)
+    value = NUMERIC_RE.sub('', value)
+    pos = value.find('-', 1)
     while pos != -1:
-        value = value[:pos] + value[pos + 1 :]
-        pos = value.find("-", pos + 1)
-
-    # Only allow the first instance of `.`
-    pos = value.find(".")
+        value = value[:pos] + value[pos + 1:]
+        pos = value.find('-', pos + 1)
+    pos = value.find('.')
     if pos != -1:
-        pos = value.find(".", pos + 1)
+        pos = value.find('.', pos + 1)
         while pos != -1:
-            value = value[:pos] + value[pos + 1 :]
-            pos = value.find(".", pos + 1)
-
+            value = value[:pos] + value[pos + 1:]
+            pos = value.find('.', pos + 1)
     return value
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: NumberInput, **kwargs: Any) -> object:
+
+    def __call__(self, widget: NumberInput, **kwargs: Any) ->object:
         """A handler to invoke when the value is changed.
 
         :param widget: The NumberInput that was changed.
@@ -81,18 +52,12 @@ class OnChangeHandler(Protocol):
 
 
 class NumberInput(Widget):
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        step: NumberInputT = 1,
-        min: NumberInputT | None = None,
-        max: NumberInputT | None = None,
-        value: NumberInputT | None = None,
-        readonly: bool = False,
-        on_change: toga.widgets.numberinput.OnChangeHandler | None = None,
-        **kwargs,
-    ):
+
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        step: NumberInputT=1, min: (NumberInputT | None)=None, max: (
+        NumberInputT | None)=None, value: (NumberInputT | None)=None,
+        readonly: bool=False, on_change: (toga.widgets.numberinput.
+        OnChangeHandler | None)=None, **kwargs):
         """Create a new number input widget.
 
         :param id: The ID for the widget.
@@ -110,29 +75,22 @@ class NumberInput(Widget):
             changes.
         :param kwargs: Initial style properties.
         """
-        # The initial setting of min requires calling get_value(),
-        # which in turn interrogates min. Prime those values with
-        # an empty starting value
         self._min: Decimal | None = None
         self._max: Decimal | None = None
-
         self.on_change = None
-
         super().__init__(id, style, **kwargs)
-
         self.readonly = readonly
         self.step = step
         self.min = min
         self.max = max
         self.value = value
-
         self.on_change = on_change
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.NumberInput(interface=self)
 
     @property
-    def readonly(self) -> bool:
+    def readonly(self) ->bool:
         """Can the value of the widget be modified by the user?
 
         This only controls manual changes by the user (i.e., typing at the
@@ -142,11 +100,11 @@ class NumberInput(Widget):
         return self._impl.get_readonly()
 
     @readonly.setter
-    def readonly(self, value: object) -> None:
+    def readonly(self, value: object) ->None:
         self._impl.set_readonly(value)
 
     @property
-    def step(self) -> Decimal:
+    def step(self) ->Decimal:
         """The amount that any increment/decrement operations will apply to the
         widget's current value. (Not all backends provide increment and
         decrement buttons.)
@@ -154,20 +112,19 @@ class NumberInput(Widget):
         return self._step
 
     @step.setter
-    def step(self, step: NumberInputT) -> None:
+    def step(self, step: NumberInputT) ->None:
         try:
             self._step = _clean_decimal(step)
         except (ValueError, TypeError, InvalidOperation) as exc:
-            raise ValueError("step must be a number") from exc
-
+            raise ValueError('step must be a number') from exc
+        else:
+            pass
         self._impl.set_step(self._step)
-
-        # Re-assigning the min and max value forces the min/max to be re-quantized.
         self.min = self.min
         self.max = self.max
 
     @property
-    def min(self) -> Decimal | None:
+    def min(self) ->(Decimal | None):
         """The minimum bound for the widget's value.
 
         Returns :any:`None` if there is no minimum bound.
@@ -178,28 +135,25 @@ class NumberInput(Widget):
         return self._min
 
     @min.setter
-    def min(self, new_min: NumberInputT | None) -> None:
+    def min(self, new_min: (NumberInputT | None)) ->None:
         try:
             new_min = _clean_decimal(new_min, self.step)
-
-            # Clip widget's value to the new minimum
             if self.value is not None and self.value < new_min:
                 self.value = new_min
         except (TypeError, ValueError, InvalidOperation) as exc:
-            if new_min is None or new_min == "":
+            if new_min is None or new_min == '':
                 new_min = None
             else:
-                raise ValueError("min must be a number or None") from exc
-
-        # Clip the max value if it's inconsistent with the new min
+                raise ValueError('min must be a number or None') from exc
+        else:
+            pass
         if self.max is not None and new_min is not None and new_min > self.max:
             self.max = new_min
-
         self._min = new_min
         self._impl.set_min_value(new_min)
 
     @property
-    def max(self) -> Decimal | None:
+    def max(self) ->(Decimal | None):
         """The maximum bound for the widget's value.
 
         Returns :any:`None` if there is no maximum bound.
@@ -210,28 +164,25 @@ class NumberInput(Widget):
         return self._max
 
     @max.setter
-    def max(self, new_max: NumberInputT | None) -> None:
+    def max(self, new_max: (NumberInputT | None)) ->None:
         try:
             new_max = _clean_decimal(new_max, self.step)
-
-            # Clip widget's value to the new maximum
             if self.value is not None and self.value > new_max:
                 self.value = new_max
         except (TypeError, ValueError, InvalidOperation) as exc:
-            if new_max is None or new_max == "":
+            if new_max is None or new_max == '':
                 new_max = None
             else:
-                raise ValueError("max must be a number or None") from exc
-
-        # Clip the min value if it's inconsistent with the new max
+                raise ValueError('max must be a number or None') from exc
+        else:
+            pass
         if self.min is not None and new_max is not None and new_max < self.min:
             self.min = new_max
-
         self._max = new_max
         self._impl.set_max_value(new_max)
 
     @property
-    def value(self) -> Decimal | None:
+    def value(self) ->(Decimal | None):
         """Current value of the widget, rounded to the same number of decimal
         places as :any:`step`, or ``None`` if no value has been set.
 
@@ -244,11 +195,7 @@ class NumberInput(Widget):
         clipped and rounded, and the visible text will be updated to match as soon as
         the widget loses focus.
         """
-        # Get the value currently displayed by the widget. This *could*
-        # be outside the min/max range.
         value = self._impl.get_value()
-
-        # If the widget has a current value, clip it
         if value is not None:
             if self.min is not None and value < self.min:
                 return self.min
@@ -257,28 +204,29 @@ class NumberInput(Widget):
         return value
 
     @value.setter
-    def value(self, value: NumberInputT | None) -> None:
+    def value(self, value: (NumberInputT | None)) ->None:
         try:
             value = _clean_decimal(value, self.step)
-
             if self.min is not None and value < self.min:
                 value = self.min
             elif self.max is not None and value > self.max:
                 value = self.max
         except (TypeError, ValueError, InvalidOperation) as exc:
-            if value is None or value == "":
+            if value is None or value == '':
                 value = None
             else:
-                raise ValueError("value must be a number or None") from exc
-
+                raise ValueError('value must be a number or None') from exc
+        else:
+            pass
         self._impl.set_value(value)
         self.refresh()
 
     @property
-    def on_change(self) -> OnChangeHandler:
+    def on_change(self) ->OnChangeHandler:
         """The handler to invoke when the value of the widget changes."""
         return self._on_change
 
     @on_change.setter
-    def on_change(self, handler: toga.widgets.numberinput.OnChangeHandler) -> None:
+    def on_change(self, handler: toga.widgets.numberinput.OnChangeHandler
+        ) ->None:
         self._on_change = wrapped_handler(self, handler)

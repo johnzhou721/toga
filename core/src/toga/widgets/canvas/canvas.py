@@ -1,34 +1,21 @@
 from __future__ import annotations
-
 from contextlib import AbstractContextManager as ContextManager
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    Literal,
-    Protocol,
-)
-
+from typing import TYPE_CHECKING, Any, Literal, Protocol
 from travertino.colors import Color
-
 import toga
 from toga.colors import BLACK
 from toga.constants import FillRule
-from toga.fonts import (
-    SYSTEM,
-    SYSTEM_DEFAULT_FONT_SIZE,
-    Font,
-)
+from toga.fonts import SYSTEM, SYSTEM_DEFAULT_FONT_SIZE, Font
 from toga.handlers import wrapped_handler
-
 from ..base import StyleT, Widget
 from .context import ClosedPathContext, Context, FillContext, StrokeContext
-
 if TYPE_CHECKING:
     from toga.images import ImageT
 
 
 class OnTouchHandler(Protocol):
-    def __call__(self, widget: Canvas, x: int, y: int, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Canvas, x: int, y: int, **kwargs: Any) ->object:
         """A handler that will be invoked when a :any:`Canvas` is touched with a finger
         or mouse.
 
@@ -40,9 +27,9 @@ class OnTouchHandler(Protocol):
 
 
 class OnResizeHandler(Protocol):
-    def __call__(
-        self, widget: Canvas, width: int, height: int, **kwargs: Any
-    ) -> object:
+
+    def __call__(self, widget: Canvas, width: int, height: int, **kwargs: Any
+        ) ->object:
         """A handler that will be invoked when a :any:`Canvas` is resized.
 
         :param widget: The canvas that was resized.
@@ -56,20 +43,13 @@ class Canvas(Widget):
     _MIN_WIDTH = 0
     _MIN_HEIGHT = 0
 
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        on_resize: OnResizeHandler | None = None,
-        on_press: OnTouchHandler | None = None,
-        on_activate: OnTouchHandler | None = None,
-        on_release: OnTouchHandler | None = None,
-        on_drag: OnTouchHandler | None = None,
-        on_alt_press: OnTouchHandler | None = None,
-        on_alt_release: OnTouchHandler | None = None,
-        on_alt_drag: OnTouchHandler | None = None,
-        **kwargs,
-    ):
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        on_resize: (OnResizeHandler | None)=None, on_press: (OnTouchHandler |
+        None)=None, on_activate: (OnTouchHandler | None)=None, on_release:
+        (OnTouchHandler | None)=None, on_drag: (OnTouchHandler | None)=None,
+        on_alt_press: (OnTouchHandler | None)=None, on_alt_release: (
+        OnTouchHandler | None)=None, on_alt_drag: (OnTouchHandler | None)=
+        None, **kwargs):
         """Create a new Canvas widget.
 
         Inherits from :class:`toga.Widget`.
@@ -88,10 +68,7 @@ class Canvas(Widget):
         :param kwargs: Initial style properties.
         """
         self._context = Context(canvas=self)
-
         super().__init__(id, style, **kwargs)
-
-        # Set all the properties
         self.on_resize = on_resize
         self.on_press = on_press
         self.on_activate = on_activate
@@ -101,11 +78,11 @@ class Canvas(Widget):
         self.on_alt_release = on_alt_release
         self.on_alt_drag = on_alt_drag
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.Canvas(interface=self)
 
     @property
-    def enabled(self) -> Literal[True]:
+    def enabled(self) ->Literal[True]:
         """Is the widget currently enabled? i.e., can the user interact with the widget?
         Canvas widgets cannot be disabled; this property will always return
         True; any attempt to modify it will be ignored.
@@ -113,19 +90,19 @@ class Canvas(Widget):
         return True
 
     @enabled.setter
-    def enabled(self, value: object) -> None:
+    def enabled(self, value: object) ->None:
         pass
 
-    def focus(self) -> None:
+    def focus(self) ->None:
         """No-op; Canvas cannot accept input focus."""
         pass
 
     @property
-    def context(self) -> Context:
+    def context(self) ->Context:
         """The root context for the canvas."""
         return self._context
 
-    def redraw(self) -> None:
+    def redraw(self) ->None:
         """Redraw the Canvas.
 
         The Canvas will be automatically redrawn after adding or removing a drawing
@@ -134,7 +111,7 @@ class Canvas(Widget):
         """
         self._impl.redraw()
 
-    def Context(self) -> ContextManager[Context]:
+    def Context(self) ->ContextManager[Context]:
         """Construct and yield a new sub-:class:`~toga.widgets.canvas.Context` within
         the root context of this Canvas.
 
@@ -142,11 +119,8 @@ class Canvas(Widget):
         """
         return self.context.Context()
 
-    def ClosedPath(
-        self,
-        x: float | None = None,
-        y: float | None = None,
-    ) -> ContextManager[ClosedPathContext]:
+    def ClosedPath(self, x: (float | None)=None, y: (float | None)=None
+        ) ->ContextManager[ClosedPathContext]:
         """Construct and yield a new :class:`~toga.widgets.canvas.ClosedPathContext`
         context in the root context of this canvas.
 
@@ -156,13 +130,9 @@ class Canvas(Widget):
         """
         return self.context.ClosedPath(x, y)
 
-    def Fill(
-        self,
-        x: float | None = None,
-        y: float | None = None,
-        color: Color | str | None = BLACK,
-        fill_rule: FillRule = FillRule.NONZERO,
-    ) -> ContextManager[FillContext]:
+    def Fill(self, x: (float | None)=None, y: (float | None)=None, color: (
+        Color | str | None)=BLACK, fill_rule: FillRule=FillRule.NONZERO
+        ) ->ContextManager[FillContext]:
         """Construct and yield a new :class:`~toga.widgets.canvas.FillContext` in the
         root context of this canvas.
 
@@ -181,14 +151,9 @@ class Canvas(Widget):
         """
         return self.context.Fill(x, y, color, fill_rule)
 
-    def Stroke(
-        self,
-        x: float | None = None,
-        y: float | None = None,
-        color: Color | str | None = BLACK,
-        line_width: float = 2.0,
-        line_dash: list[float] | None = None,
-    ) -> ContextManager[StrokeContext]:
+    def Stroke(self, x: (float | None)=None, y: (float | None)=None, color:
+        (Color | str | None)=BLACK, line_width: float=2.0, line_dash: (list
+        [float] | None)=None) ->ContextManager[StrokeContext]:
         """Construct and yield a new :class:`~toga.widgets.canvas.StrokeContext` in the
         root context of this canvas.
 
@@ -206,26 +171,26 @@ class Canvas(Widget):
         return self.context.Stroke(x, y, color, line_width, line_dash)
 
     @property
-    def on_resize(self) -> OnResizeHandler:
+    def on_resize(self) ->OnResizeHandler:
         """The handler to invoke when the canvas is resized."""
         return self._on_resize
 
     @on_resize.setter
-    def on_resize(self, handler: OnResizeHandler) -> None:
+    def on_resize(self, handler: OnResizeHandler) ->None:
         self._on_resize = wrapped_handler(self, handler)
 
     @property
-    def on_press(self) -> OnTouchHandler:
+    def on_press(self) ->OnTouchHandler:
         """The handler invoked when the canvas is pressed. When a mouse is being used,
         this press will be with the primary (usually the left) mouse button."""
         return self._on_press
 
     @on_press.setter
-    def on_press(self, handler: OnTouchHandler) -> None:
+    def on_press(self, handler: OnTouchHandler) ->None:
         self._on_press = wrapped_handler(self, handler)
 
     @property
-    def on_activate(self) -> OnTouchHandler:
+    def on_activate(self) ->OnTouchHandler:
         """The handler invoked when the canvas is pressed in a way indicating the
         pressed object should be activated. When a mouse is in use, this will usually be
         a double click with the primary (usually the left) mouse button.
@@ -234,29 +199,29 @@ class Canvas(Widget):
         return self._on_activate
 
     @on_activate.setter
-    def on_activate(self, handler: OnTouchHandler) -> None:
+    def on_activate(self, handler: OnTouchHandler) ->None:
         self._on_activate = wrapped_handler(self, handler)
 
     @property
-    def on_release(self) -> OnTouchHandler:
+    def on_release(self) ->OnTouchHandler:
         """The handler invoked when a press on the canvas ends."""
         return self._on_release
 
     @on_release.setter
-    def on_release(self, handler: OnTouchHandler) -> None:
+    def on_release(self, handler: OnTouchHandler) ->None:
         self._on_release = wrapped_handler(self, handler)
 
     @property
-    def on_drag(self) -> OnTouchHandler:
+    def on_drag(self) ->OnTouchHandler:
         """The handler invoked when the location of a press changes."""
         return self._on_drag
 
     @on_drag.setter
-    def on_drag(self, handler: OnTouchHandler) -> None:
+    def on_drag(self, handler: OnTouchHandler) ->None:
         self._on_drag = wrapped_handler(self, handler)
 
     @property
-    def on_alt_press(self) -> OnTouchHandler:
+    def on_alt_press(self) ->OnTouchHandler:
         """The handler to invoke when the canvas is pressed in an alternate
         manner. This will usually correspond to a secondary (usually the right) mouse
         button press.
@@ -266,11 +231,11 @@ class Canvas(Widget):
         return self._on_alt_press
 
     @on_alt_press.setter
-    def on_alt_press(self, handler: OnTouchHandler) -> None:
+    def on_alt_press(self, handler: OnTouchHandler) ->None:
         self._on_alt_press = wrapped_handler(self, handler)
 
     @property
-    def on_alt_release(self) -> OnTouchHandler:
+    def on_alt_release(self) ->OnTouchHandler:
         """The handler to invoke when an alternate press is released.
 
         This event is not supported on Android or iOS.
@@ -278,11 +243,11 @@ class Canvas(Widget):
         return self._on_alt_release
 
     @on_alt_release.setter
-    def on_alt_release(self, handler: OnTouchHandler) -> None:
+    def on_alt_release(self, handler: OnTouchHandler) ->None:
         self._on_alt_release = wrapped_handler(self, handler)
 
     @property
-    def on_alt_drag(self) -> OnTouchHandler:
+    def on_alt_drag(self) ->OnTouchHandler:
         """The handler to invoke when the location of an alternate press changes.
 
         This event is not supported on Android or iOS.
@@ -290,15 +255,11 @@ class Canvas(Widget):
         return self._on_alt_drag
 
     @on_alt_drag.setter
-    def on_alt_drag(self, handler: OnTouchHandler) -> None:
+    def on_alt_drag(self, handler: OnTouchHandler) ->None:
         self._on_alt_drag = wrapped_handler(self, handler)
 
-    def measure_text(
-        self,
-        text: str,
-        font: Font | None = None,
-        line_height: float | None = None,
-    ) -> tuple[float, float]:
+    def measure_text(self, text: str, font: (Font | None)=None, line_height:
+        (float | None)=None) ->tuple[float, float]:
         """Measure the size at which :meth:`~.Context.write_text` would
         render some text.
 
@@ -311,10 +272,9 @@ class Canvas(Widget):
         """
         if font is None:
             font = Font(family=SYSTEM, size=SYSTEM_DEFAULT_FONT_SIZE)
-
         return self._impl.measure_text(str(text), font._impl, line_height)
 
-    def as_image(self, format: type[ImageT] = toga.Image) -> ImageT:
+    def as_image(self, format: type[ImageT]=toga.Image) ->ImageT:
         """Render the canvas as an image.
 
         :param format: Format to provide. Defaults to :class:`~toga.images.Image`; also

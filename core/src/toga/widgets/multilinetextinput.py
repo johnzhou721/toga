@@ -1,15 +1,13 @@
 from __future__ import annotations
-
 from typing import Any, Protocol
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: MultilineTextInput, **kwargs: Any) -> object:
+
+    def __call__(self, widget: MultilineTextInput, **kwargs: Any) ->object:
         """A handler to invoke when the value is changed.
 
         :param widget: The MultilineTextInput that was changed.
@@ -18,16 +16,11 @@ class OnChangeHandler(Protocol):
 
 
 class MultilineTextInput(Widget):
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        value: str | None = None,
-        readonly: bool = False,
-        placeholder: str | None = None,
-        on_change: toga.widgets.multilinetextinput.OnChangeHandler | None = None,
-        **kwargs,
-    ):
+
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        value: (str | None)=None, readonly: bool=False, placeholder: (str |
+        None)=None, on_change: (toga.widgets.multilinetextinput.
+        OnChangeHandler | None)=None, **kwargs):
         """Create a new multi-line text input widget.
 
         :param id: The ID for the widget.
@@ -42,22 +35,17 @@ class MultilineTextInput(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
-        # Set a dummy handler before installing the actual on_change, because we do not
-        # want on_change triggered by the initial value being set
         self.on_change = None
         self.value = value
-
-        # Set all the properties
         self.readonly = readonly
         self.placeholder = placeholder
         self.on_change = on_change
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.MultilineTextInput(interface=self)
 
     @property
-    def placeholder(self) -> str:
+    def placeholder(self) ->str:
         """The placeholder text for the widget.
 
         A value of ``None`` will be interpreted and returned as an empty string.
@@ -66,12 +54,12 @@ class MultilineTextInput(Widget):
         return self._impl.get_placeholder()
 
     @placeholder.setter
-    def placeholder(self, value: object) -> None:
-        self._impl.set_placeholder("" if value is None else str(value))
+    def placeholder(self, value: object) ->None:
+        self._impl.set_placeholder('' if value is None else str(value))
         self.refresh()
 
     @property
-    def readonly(self) -> bool:
+    def readonly(self) ->bool:
         """Can the value of the widget be modified by the user?
 
         This only controls manual changes by the user (i.e., typing at the
@@ -81,11 +69,11 @@ class MultilineTextInput(Widget):
         return self._impl.get_readonly()
 
     @readonly.setter
-    def readonly(self, value: object) -> None:
+    def readonly(self, value: object) ->None:
         self._impl.set_readonly(bool(value))
 
     @property
-    def value(self) -> str:
+    def value(self) ->str:
         """The text to display in the widget.
 
         A value of ``None`` will be interpreted and returned as an empty string.
@@ -94,25 +82,24 @@ class MultilineTextInput(Widget):
         return self._impl.get_value()
 
     @value.setter
-    def value(self, value: object) -> None:
-        self._impl.set_value("" if value is None else str(value))
+    def value(self, value: object) ->None:
+        self._impl.set_value('' if value is None else str(value))
         self.refresh()
 
-    def scroll_to_bottom(self) -> None:
+    def scroll_to_bottom(self) ->None:
         """Scroll the view to make the bottom of the text field visible."""
         self._impl.scroll_to_bottom()
 
-    def scroll_to_top(self) -> None:
+    def scroll_to_top(self) ->None:
         """Scroll the view to make the top of the text field visible."""
         self._impl.scroll_to_top()
 
     @property
-    def on_change(self) -> OnChangeHandler:
+    def on_change(self) ->OnChangeHandler:
         """The handler to invoke when the value of the widget changes."""
         return self._on_change
 
     @on_change.setter
-    def on_change(
-        self, handler: toga.widgets.multilinetextinput.OnChangeHandler
-    ) -> None:
+    def on_change(self, handler: toga.widgets.multilinetextinput.
+        OnChangeHandler) ->None:
         self._on_change = wrapped_handler(self, handler)

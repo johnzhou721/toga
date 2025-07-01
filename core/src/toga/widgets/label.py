@@ -1,18 +1,12 @@
 from __future__ import annotations
-
 from typing import Any
-
 from .base import StyleT, Widget
 
 
 class Label(Widget):
-    def __init__(
-        self,
-        text: str,
-        id: str | None = None,
-        style: StyleT | None = None,
-        **kwargs,
-    ):
+
+    def __init__(self, text: str, id: (str | None)=None, style: (StyleT |
+        None)=None, **kwargs):
         """Create a new text label.
 
         :param text: Text of the label.
@@ -22,18 +16,17 @@ class Label(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
         self.text = text
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.Label(interface=self)
 
-    def focus(self) -> None:
+    def focus(self) ->None:
         """No-op; Label cannot accept input focus."""
         pass
 
     @property
-    def text(self) -> str:
+    def text(self) ->str:
         """The text displayed by the label.
 
         ``None``, and the Unicode codepoint U+200B (ZERO WIDTH SPACE), will be
@@ -43,11 +36,10 @@ class Label(Widget):
         return self._impl.get_text()
 
     @text.setter
-    def text(self, value: object) -> None:
-        if value is None or value == "\u200b":
-            text = ""
+    def text(self, value: object) ->None:
+        if value is None or value == '\u200b':
+            text = ''
         else:
             text = str(value)
-
         self._impl.set_text(text)
         self.refresh()

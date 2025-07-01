@@ -1,30 +1,19 @@
 from __future__ import annotations
-
 import itertools
 import sys
 from abc import ABC, abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING
-
 import toga
 from toga import dialogs
 from toga.window import MainWindow, Window
-
 if TYPE_CHECKING:
     from toga.app import App
 
 
 class Document(ABC):
-    #: A short description of the type of document (e.g., "Text document"). This is a
-    #: class variable that subclasses should define.
     description: str
-
-    #: A list of extensions that documents of this type might use,
-    # without leading dots (e.g.,
-    #: ``["doc", "txt"]``). The list must have at least one extension; the first is the
-    #: default extension for documents of this type. This is a class variable that
-    #: subclasses should define.
     extensions: list[str]
 
     def __init__(self, app: App):
@@ -38,46 +27,41 @@ class Document(ABC):
         self._app = app
         self._main_window: Window | None = None
         self.modified = False
-
-        # Create the visual representation of the document.
         self.create()
-
-        # Add the document to the list of managed documents.
         self.app.documents._add(self)
 
-    ######################################################################
-    # Document properties
-    ######################################################################
     @property
-    def path(self) -> Path:
+    def path(self) ->Path:
         """The path where the document is stored (read-only)."""
         return self._path
 
     @property
-    def app(self) -> App:
+    def app(self) ->App:
         """The app that this document is associated with (read-only)."""
         return self._app
 
     @property
-    def main_window(self) -> Window | None:
+    def main_window(self) ->(Window | None):
         """The main window for the document."""
         return self._main_window
 
     @main_window.setter
-    def main_window(self, window: Window) -> None:
+    def main_window(self, window: Window) ->None:
         self._main_window = window
 
     @property
-    def title(self) -> str:
+    def title(self) ->str:
         """The title of the document.
 
         This will be used as the default title of a :any:`toga.DocumentWindow` that
         contains the document.
         """
-        return f"{self.description}: {self.path.stem if self.path else 'Untitled'}"
+        return (
+            f"{self.description}: {self.path.stem if self.path else 'Untitled'}"
+            )
 
     @property
-    def modified(self) -> bool:
+    def modified(self) ->bool:
         """Has the document been modified?"""
         return self._modified
 
@@ -85,19 +69,15 @@ class Document(ABC):
     def modified(self, value: bool):
         self._modified = bool(value)
 
-    ######################################################################
-    # Document operations
-    ######################################################################
-
     def focus(self):
         """Give the document focus in the app."""
         self.app.current_window = self.main_window
 
-    def hide(self) -> None:
+    def hide(self) ->None:
         """Hide the visual representation for this document."""
         self.main_window.hide()
 
-    def open(self, path: str | Path):
+    def open(self, path: (str | Path)):
         """Open a file as a document.
 
         :param path: The file to open.
@@ -108,13 +88,10 @@ class Document(ABC):
         else:
             self._path = None
             raise FileNotFoundError()
-
-        # Set the title of the document window to match the path
         self._main_window.title = self._main_window._default_title
-        # Document is initially unmodified
         self.modified = False
 
-    def save(self, path: str | Path | None = None):
+    def save(self, path: (str | Path | None)=None):
         """Save the document as a file.
 
         If a path is provided, the path for the document will be updated. Otherwise, the
@@ -128,17 +105,14 @@ class Document(ABC):
         if self._writable():
             if path:
                 self._path = Path(path).absolute()
-                # Re-set the title of the document with the new path
                 self._main_window.title = self._main_window._default_title
             self.write()
-            # Clear the modification flag.
             self.modified = False
 
-    # A document is writable if its class overrides the `write` method.
     def _writable(self):
         return type(self).write is not Document.write
 
-    def show(self) -> None:
+    def show(self) ->None:
         """Show the visual representation for this document."""
         self.main_window.show()
 
@@ -150,12 +124,8 @@ class Document(ABC):
         """
         self.modified = True
 
-    ######################################################################
-    # Abstract interface
-    ######################################################################
-
     @abstractmethod
-    def create(self) -> None:
+    def create(self) ->None:
         """Create the window (or windows) for the document.
 
         This method must, at a minimum, assign the :any:`main_window` property. It
@@ -163,12 +133,12 @@ class Document(ABC):
         """
 
     @abstractmethod
-    def read(self) -> None:
+    def read(self) ->None:
         """Load a representation of the document into memory from
         :attr:`~toga.Document.path`, and populate the document window.
         """
 
-    def write(self) -> None:  # noqa: B027 (it's intentionally blank)
+    def write(self) ->None:
         """Persist a representation of the current state of the document.
 
         This method is a no-op by default, to allow for read-only document types.
@@ -176,6 +146,7 @@ class Document(ABC):
 
 
 class DocumentSet(Sequence[Document], Mapping[Path, Document]):
+
     def __init__(self, app: App, types: list[type[Document]]):
         """A collection of documents managed by an app.
 
@@ -188,75 +159,61 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         """
         self.app = app
         for doc_type in types:
-            if not hasattr(doc_type, "description"):
+            if not hasattr(doc_type, 'description'):
                 raise ValueError(
-                    f"Document type {doc_type.__name__!r} "
-                    "doesn't define a 'descriptions' attribute"
-                )
-            if not hasattr(doc_type, "extensions"):
+                    f"Document type {doc_type.__name__!r} doesn't define a 'descriptions' attribute"
+                    )
+            if not hasattr(doc_type, 'extensions'):
                 raise ValueError(
-                    f"Document type {doc_type.__name__!r} "
-                    "doesn't define an 'extensions' attribute"
-                )
+                    f"Document type {doc_type.__name__!r} doesn't define an 'extensions' attribute"
+                    )
             if len(doc_type.extensions) == 0:
                 raise ValueError(
-                    f"Document type {doc_type.__name__!r} "
-                    "doesn't define at least one extension"
-                )
-
+                    f"Document type {doc_type.__name__!r} doesn't define at least one extension"
+                    )
         self._types = types
-
         self.elements: list[Document] = []
 
     @property
-    def types(self) -> list[type[Document]]:
+    def types(self) ->list[type[Document]]:
         """The list of document types the app can manage.
 
         The first document type in the list is the app's default document type.
         """
         return self._types
 
-    def __iter__(self) -> Iterator[Document]:
+    def __iter__(self) ->Iterator[Document]:
         return iter(self.elements)
 
-    def __contains__(self, value: object) -> bool:
+    def __contains__(self, value: object) ->bool:
         return value in self.elements
 
-    def __len__(self) -> int:
+    def __len__(self) ->int:
         return len(self.elements)
 
     def __getitem__(self, path_or_index):
-        # Look up by index
         if isinstance(path_or_index, int):
             return self.elements[path_or_index]
-
-        # Look up by path
-        if sys.version_info < (3, 10):  # pragma: no-cover-if-gte-py310
-            # resolve() *should* turn the path into an absolute path;
-            # but on Windows, with Python 3.9, it doesn't.
+        if sys.version_info < (3, 10):
             path = Path(path_or_index).absolute().resolve()
-        else:  # pragma: no-cover-if-lt-py310
+        else:
             path = Path(path_or_index).resolve()
         for item in self.elements:
             if item.path == path:
                 return item
-
-        # No match found
         raise KeyError(path_or_index)
 
     def _add(self, document: Path):
         if document in self:
-            raise ValueError("Document is already being managed.")
-
+            raise ValueError('Document is already being managed.')
         self.elements.append(document)
 
     def _remove(self, document: Path):
         if document not in self:
-            raise ValueError("Document is not being managed.")
-
+            raise ValueError('Document is not being managed.')
         self.elements.remove(document)
 
-    def new(self, document_type: type[Document]) -> Document:
+    def new(self, document_type: type[Document]) ->Document:
         """Create a new document of the given type, and show the document window.
 
         :param document_type: The document type that has been requested.
@@ -266,7 +223,7 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         document.show()
         return document
 
-    async def request_open(self) -> Document:
+    async def request_open(self) ->Document:
         """Present a dialog asking the user for a document to open, and pass the
         selected path to :meth:`open`.
 
@@ -274,47 +231,28 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         :raises ValueError: If the path describes a file that is of a type that doesn't
             match a registered document type.
         """
-        # A safety catch: if app modal dialogs aren't actually modal (eg, macOS) prevent
-        # a second open dialog from being opened when one is already active. Attach the
-        # dialog instance as a private attribute; delete as soon as the future is
-        # complete.
-        if hasattr(self, "_open_dialog"):
+        if hasattr(self, '_open_dialog'):
             return
-
-        # CLOSE_ON_LAST_WINDOW is a proxy for the GTK/Windows behavior of loading
-        # content into the existing window. This is actually implemented by creating a
-        # new window and disposing of the old one; mark the current window for cleanup
         current_window = self.app.current_window
         if self.app._impl.CLOSE_ON_LAST_WINDOW:
-            if hasattr(self.app.current_window, "_commit"):
+            if hasattr(self.app.current_window, '_commit'):
                 if await self.app.current_window._commit():
                     current_window._replace = True
                 else:
-                    # The changes in the current document window couldn't be committed
-                    # (e.g., a save was requested, but then cancelled), so we can't
-                    # proceed with opening a new document.
                     return
-
-        self._open_dialog = dialogs.OpenFileDialog(
-            self.app.formal_name,
-            file_types=(
-                list(itertools.chain(*(doc_type.extensions for doc_type in self.types)))
-                if self.types
-                else None
-            ),
-        )
+        self._open_dialog = dialogs.OpenFileDialog(self.app.formal_name,
+            file_types=list(itertools.chain(*(doc_type.extensions for
+            doc_type in self.types))) if self.types else None)
         path = await self.app.dialog(self._open_dialog)
         del self._open_dialog
-
         try:
             if path:
                 return self.open(path)
         finally:
-            # Remove the replacement marker
-            if hasattr(current_window, "_replace"):
+            if hasattr(current_window, '_replace'):
                 del current_window._replace
 
-    def open(self, path: Path | str) -> Document:
+    def open(self, path: (Path | str)) ->Document:
         """Open a document in the app, and show the document window.
 
         If the provided path is already an open document, the existing representation
@@ -326,46 +264,38 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
             match a registered document type.
         """
         try:
-            if sys.version_info < (3, 10):  # pragma: no-cover-if-gte-py310
-                # resolve() *should* turn the path into an absolute path;
-                # but on Windows, with Python 3.9, it doesn't.
+            if sys.version_info < (3, 10):
                 path = Path(path).absolute().resolve()
-            else:  # pragma: no-cover-if-lt-py310
+            else:
                 path = Path(path).resolve()
             document = self.app.documents[path]
             document.focus()
             return document
         except KeyError:
-            # No existing representation for the document.
             try:
-                DocType = {
-                    extension: doc_type
-                    for doc_type in self.types
-                    for extension in doc_type.extensions
-                }[path.suffix[1:]]
+                DocType = {extension: doc_type for doc_type in self.types for
+                    extension in doc_type.extensions}[path.suffix[1:]]
             except KeyError as exc:
                 raise ValueError(
                     f"Don't know how to open documents with extension {path.suffix}"
-                ) from exc
+                    ) from exc
             else:
                 prev_window = self.app.current_window
                 document = DocType(app=self.app)
                 try:
                     document.open(path)
-
-                    # If the previous window is marked for replacement, close it; but
-                    # put the new document window in the same position as the previous
-                    # one.
-                    if getattr(prev_window, "_replace", False):
+                    if getattr(prev_window, '_replace', False):
                         document.main_window.position = prev_window.position
                         prev_window.close()
-
                     document.show()
                     return document
                 except Exception:
-                    # Open failed; ensure any windows opened by the document are closed.
                     document.main_window.close()
                     raise
+                else:
+                    pass
+        else:
+            pass
 
     async def save(self):
         """Save the current content of an app.
@@ -373,7 +303,7 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         If there isn't a current window, or current window doesn't define a ``save()``
         method, the save request will be ignored.
         """
-        if hasattr(self.app.current_window, "save"):
+        if hasattr(self.app.current_window, 'save'):
             await self.app.current_window.save()
 
     async def save_as(self):
@@ -382,7 +312,7 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         If there isn't a current window, or the current window hasn't defined a
         ``save_as()`` method, the save-as request will be ignored.
         """
-        if hasattr(self.app.current_window, "save_as"):
+        if hasattr(self.app.current_window, 'save_as'):
             await self.app.current_window.save_as()
 
     async def save_all(self):
@@ -392,11 +322,12 @@ class DocumentSet(Sequence[Document], Mapping[Path, Document]):
         app. Any windows that do not provide a ``save()`` method will be ignored.
         """
         for window in self.app.windows:
-            if hasattr(window, "save"):
+            if hasattr(window, 'save'):
                 await window.save()
 
 
 class DocumentWindow(MainWindow):
+
     def __init__(self, doc: Document, *args, **kwargs):
         """Create a new document Window.
 
@@ -414,43 +345,31 @@ class DocumentWindow(MainWindow):
         :param doc: The document being managed by this window
         """
         self._doc = doc
-        if "on_close" not in kwargs:
-            kwargs["on_close"] = self._confirm_close
-
+        if 'on_close' not in kwargs:
+            kwargs['on_close'] = self._confirm_close
         super().__init__(*args, **kwargs)
 
     @property
-    def doc(self) -> Document:
+    def doc(self) ->Document:
         """The document displayed by this window."""
         return self._doc
 
     @property
-    def _default_title(self) -> str:
+    def _default_title(self) ->str:
         return self.doc.title
 
     async def _confirm_close(self, window, **kwargs):
         if self.doc.modified:
-            if await self.dialog(
-                toga.QuestionDialog(
-                    "Save changes?",
-                    (
-                        "This document has unsaved changes. Do you want to save these "
-                        "changes?"
-                    ),
-                )
-            ):
+            if await self.dialog(toga.QuestionDialog('Save changes?',
+                'This document has unsaved changes. Do you want to save these changes?'
+                )):
                 return await self.save()
         return True
 
     async def _commit(self):
-        # Get the window into a state where new content could be opened.
-        # Used by the open method on GTK/Linux to ensure the current document
-        # has been saved before closing this window and opening a replacement.
         return await self._confirm_close(self)
 
     def _close(self):
-        # When then window is closed, remove the document it is managing from the app's
-        # list of managed documents.
         self._app.documents._remove(self.doc)
         super()._close()
 
@@ -465,7 +384,6 @@ class DocumentWindow(MainWindow):
         """
         if self.doc._writable():
             if self.doc.path:
-                # Document has been saved previously; save using that filename.
                 self.doc.save()
                 return True
             else:
@@ -482,16 +400,11 @@ class DocumentWindow(MainWindow):
             document type doesn't define a :meth:`~toga.Document.write` method.
         """
         if self.doc._writable():
-            suggested_path = (
-                self.doc.path if self.doc.path else f"Untitled.{self.doc.extensions[0]}"
-            )
-            new_path = await self.dialog(
-                dialogs.SaveFileDialog("Save as...", suggested_path)
-            )
-            # If a filename has been returned, save using that filename.
-            # If there isn't a filename, the save was cancelled.
+            suggested_path = (self.doc.path if self.doc.path else
+                f'Untitled.{self.doc.extensions[0]}')
+            new_path = await self.dialog(dialogs.SaveFileDialog(
+                'Save as...', suggested_path))
             if new_path:
                 self.doc.save(new_path)
                 return True
-
         return False

@@ -1,18 +1,15 @@
 from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any, Protocol
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
-
 if TYPE_CHECKING:
     from toga.icons import IconContentT
 
 
 class OnPressHandler(Protocol):
-    def __call__(self, widget: Button, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Button, **kwargs: Any) ->object:
         """A handler that will be invoked when a button is pressed.
 
         :param widget: The button that was pressed.
@@ -21,16 +18,11 @@ class OnPressHandler(Protocol):
 
 
 class Button(Widget):
-    def __init__(
-        self,
-        text: str | None = None,
-        icon: IconContentT | None = None,
-        id: str | None = None,
-        style: StyleT | None = None,
-        on_press: toga.widgets.button.OnPressHandler | None = None,
-        enabled: bool = True,
-        **kwargs,
-    ):
+
+    def __init__(self, text: (str | None)=None, icon: (IconContentT | None)
+        =None, id: (str | None)=None, style: (StyleT | None)=None, on_press:
+        (toga.widgets.button.OnPressHandler | None)=None, enabled: bool=
+        True, **kwargs):
         """Create a new button widget.
 
         :param text: The text to display on the button.
@@ -45,28 +37,22 @@ class Button(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
-        # Set a dummy handler before installing the actual on_press, because we do not
-        # want on_press triggered by the initial value being set
         self.on_press = None
-
-        # Set the content of the button - either an icon, or text, but not both.
         if icon:
             if text is not None:
-                raise ValueError("Cannot specify both text and an icon")
+                raise ValueError('Cannot specify both text and an icon')
             else:
                 self.icon = icon
         else:
             self.text = text
-
         self.on_press = on_press
         self.enabled = enabled
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.Button(interface=self)
 
     @property
-    def text(self) -> str:
+    def text(self) ->str:
         """The text displayed on the button.
 
         ``None``, and the Unicode codepoint U+200B (ZERO WIDTH SPACE), will be
@@ -85,21 +71,17 @@ class Button(Widget):
         return self._impl.get_text()
 
     @text.setter
-    def text(self, value: str | None) -> None:
-        # \u200B: zero-width space
-        if value is None or value == "\u200b":
-            value = ""
+    def text(self, value: (str | None)) ->None:
+        if value is None or value == '\u200b':
+            value = ''
         else:
-            # Button text can't include line breaks. Strip any content
-            # after a line break (if provided)
-            value = str(value).split("\n")[0]
-
+            value = str(value).split('\n')[0]
         self._impl.set_text(value)
         self._impl.set_icon(None)
         self.refresh()
 
     @property
-    def icon(self) -> toga.Icon | None:
+    def icon(self) ->(toga.Icon | None):
         """The icon displayed on the button.
 
         Can be specified as any valid :any:`icon content <IconContentT>`.
@@ -115,30 +97,28 @@ class Button(Widget):
         return self._impl.get_icon()
 
     @icon.setter
-    def icon(self, value: IconContentT | None) -> None:
+    def icon(self, value: (IconContentT | None)) ->None:
         if isinstance(value, toga.Icon):
             icon = value
-            text = ""
+            text = ''
         elif value is None:
             if self.icon is None:
-                # Already a null icon; nothing changes.
                 return
             else:
                 icon = None
                 text = self._impl.get_text()
         else:
             icon = toga.Icon(value)
-            text = ""
-
+            text = ''
         self._impl.set_icon(icon)
         self._impl.set_text(text)
         self.refresh()
 
     @property
-    def on_press(self) -> OnPressHandler:
+    def on_press(self) ->OnPressHandler:
         """The handler to invoke when the button is pressed."""
         return self._on_press
 
     @on_press.setter
-    def on_press(self, handler: toga.widgets.button.OnPressHandler) -> None:
+    def on_press(self, handler: toga.widgets.button.OnPressHandler) ->None:
         self._on_press = wrapped_handler(self, handler)

@@ -1,22 +1,14 @@
 from __future__ import annotations
-
 from typing import Any, Literal, SupportsFloat
-
 from .base import StyleT, Widget
 
 
 class ProgressBar(Widget):
     _MIN_WIDTH = 100
 
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        max: str | SupportsFloat = 1.0,
-        value: str | SupportsFloat = 0.0,
-        running: bool = False,
-        **kwargs,
-    ):
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        max: (str | SupportsFloat)=1.0, value: (str | SupportsFloat)=0.0,
+        running: bool=False, **kwargs):
         """Create a new Progress Bar widget.
 
         :param id: The ID for the widget.
@@ -33,18 +25,16 @@ class ProgressBar(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
         self.max = max
         self.value = value
-
         if running:
             self.start()
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.ProgressBar(interface=self)
 
     @property
-    def enabled(self) -> Literal[True]:
+    def enabled(self) ->Literal[True]:
         """Is the widget currently enabled? i.e., can the user interact with the widget?
 
         ProgressBar widgets cannot be disabled; this property will always return True;
@@ -53,11 +43,11 @@ class ProgressBar(Widget):
         return True
 
     @enabled.setter
-    def enabled(self, value: object) -> None:
+    def enabled(self, value: object) ->None:
         pass
 
     @property
-    def is_running(self) -> bool:
+    def is_running(self) ->bool:
         """Describe if the activity indicator is currently running.
 
         Use ``start()`` and ``stop()`` to change the running state.
@@ -67,14 +57,14 @@ class ProgressBar(Widget):
         return self._impl.is_running()
 
     @property
-    def is_determinate(self) -> bool:
+    def is_determinate(self) ->bool:
         """Describe whether the progress bar has a known or indeterminate maximum.
 
         True if the progress bar has determinate length; False otherwise.
         """
         return self.max is not None
 
-    def start(self) -> None:
+    def start(self) ->None:
         """Start the progress bar.
 
         If the progress bar is already started, this is a no-op.
@@ -82,7 +72,7 @@ class ProgressBar(Widget):
         if not self.is_running:
             self._impl.start()
 
-    def stop(self) -> None:
+    def stop(self) ->None:
         """Stop the progress bar.
 
         If the progress bar is already stopped, this is a no-op.
@@ -91,7 +81,7 @@ class ProgressBar(Widget):
             self._impl.stop()
 
     @property
-    def value(self) -> float:
+    def value(self) ->float:
         """The current value of the progress indicator.
 
         If the progress bar is determinate, the value must be between 0 and
@@ -103,13 +93,13 @@ class ProgressBar(Widget):
         return self._impl.get_value()
 
     @value.setter
-    def value(self, value: str | SupportsFloat) -> None:
+    def value(self, value: (str | SupportsFloat)) ->None:
         if self.max is not None:
             value = max(0.0, min(self.max, float(value)))
             self._impl.set_value(value)
 
     @property
-    def max(self) -> float | None:
+    def max(self) ->(float | None):
         """The value indicating completion of the task being monitored.
 
         Must be a number > 0, or ``None`` for a task of indeterminate length.
@@ -117,10 +107,11 @@ class ProgressBar(Widget):
         return self._impl.get_max()
 
     @max.setter
-    def max(self, value: str | SupportsFloat | None) -> None:
+    def max(self, value: (str | SupportsFloat | None)) ->None:
         if value is None:
             self._impl.set_max(None)
         elif float(value) > 0.0:
             self._impl.set_max(float(value))
         else:
-            raise ValueError("max value must be None, or a numerical value > 0")
+            raise ValueError('max value must be None, or a numerical value > 0'
+                )

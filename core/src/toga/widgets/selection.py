@@ -1,19 +1,16 @@
 from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import Any, Protocol, TypeVar
-
 import toga
 from toga.handlers import wrapped_handler
 from toga.sources import ListSource, Source
-
 from .base import StyleT, Widget
-
-SourceT = TypeVar("SourceT", bound=Source)
+SourceT = TypeVar('SourceT', bound=Source)
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: Selection, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Selection, **kwargs: Any) ->object:
         """A handler to invoke when the value is changed.
 
         :param widget: The Selection that was changed.
@@ -22,17 +19,11 @@ class OnChangeHandler(Protocol):
 
 
 class Selection(Widget):
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        items: SourceT | Iterable | None = None,
-        accessor: str | None = None,
-        value: object | None = None,
-        on_change: toga.widgets.selection.OnChangeHandler | None = None,
-        enabled: bool = True,
-        **kwargs,
-    ):
+
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        items: (SourceT | Iterable | None)=None, accessor: (str | None)=
+        None, value: (object | None)=None, on_change: (toga.widgets.
+        selection.OnChangeHandler | None)=None, enabled: bool=True, **kwargs):
         """Create a new Selection widget.
 
         :param id: The ID for the widget.
@@ -48,26 +39,21 @@ class Selection(Widget):
         :param enabled: Whether the user can interact with the widget.
         :param kwargs: Initial style properties.
         """
-
         self._items: SourceT | ListSource
-
-        self.on_change = None  # needed for _impl initialization
-
+        self.on_change = None
         self._accessor = accessor
         super().__init__(id, style, **kwargs)
-
         self.items = items
         if value:
             self.value = value
-
         self.on_change = on_change
         self.enabled = enabled
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.Selection(interface=self)
 
     @property
-    def items(self) -> SourceT | ListSource:
+    def items(self) ->(SourceT | ListSource):
         """The items to display in the selection.
 
         When setting this property:
@@ -84,49 +70,40 @@ class Selection(Widget):
         return self._items
 
     @items.setter
-    def items(self, items: SourceT | Iterable | None) -> None:
+    def items(self, items: (SourceT | Iterable | None)) ->None:
         if self._accessor is None:
-            accessors = ["value"]
+            accessors = ['value']
         else:
             accessors = [self._accessor]
-
         if items is None:
             self._items = ListSource(accessors=accessors, data=[])
         elif isinstance(items, Source):
             if self._accessor is None:
-                raise ValueError("Must specify an accessor to use a data source")
+                raise ValueError(
+                    'Must specify an accessor to use a data source')
             self._items = items
         else:
             self._items = ListSource(accessors=accessors, data=items)
-
         self._items.add_listener(self._impl)
-
-        # Temporarily halt notifications
         orig_on_change = self._on_change
         self.on_change = None
-
-        # Clear the widget, and insert all the data rows
         self._impl.clear()
         for index, item in enumerate(self.items):
             self._impl.insert(index, item)
-
-        # Restore the original change handler and trigger it.
         self._on_change = orig_on_change
         self.on_change()
-
         self.refresh()
 
-    def _title_for_item(self, item: Any) -> str:
+    def _title_for_item(self, item: Any) ->str:
         """Internal utility method; return the display title for an item"""
         if self._accessor:
             title = getattr(item, self._accessor)
         else:
             title = item.value
-
-        return str(title).split("\n")[0]
+        return str(title).split('\n')[0]
 
     @property
-    def value(self) -> object | None:
+    def value(self) ->(object | None):
         """The currently selected item.
 
         Returns None if there are no items in the selection.
@@ -145,35 +122,33 @@ class Selection(Widget):
         index = self._impl.get_selected_index()
         if index is None:
             return None
-
         item = self._items[index]
-        # If there was no accessor specified, the data values are literals.
-        # Dereference the value out of the Row object.
         if item and self._accessor is None:
             return item.value
         return item
 
     @value.setter
-    def value(self, value: object) -> None:
+    def value(self, value: object) ->None:
         try:
             if self._accessor is None:
-                item = self._items.find({"value": value})
+                item = self._items.find({'value': value})
             else:
                 item = value
-
             index = self._items.index(item)
             self._impl.select_item(index=index, item=item)
         except ValueError as exc:
             raise ValueError(
-                f"{value!r} is not a current item in the selection"
-            ) from exc
+                f'{value!r} is not a current item in the selection') from exc
+        else:
+            pass
 
     @property
-    def on_change(self) -> OnChangeHandler:
+    def on_change(self) ->OnChangeHandler:
         """Handler to invoke when the value of the selection is changed,
         either by the user or programmatically."""
         return self._on_change
 
     @on_change.setter
-    def on_change(self, handler: toga.widgets.selection.OnChangeHandler) -> None:
+    def on_change(self, handler: toga.widgets.selection.OnChangeHandler
+        ) ->None:
         self._on_change = wrapped_handler(self, handler)

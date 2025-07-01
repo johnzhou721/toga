@@ -1,16 +1,14 @@
 from __future__ import annotations
-
 import datetime
 from typing import Any, Protocol
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: TimeInput, **kwargs: Any) -> object:
+
+    def __call__(self, widget: TimeInput, **kwargs: Any) ->object:
         """A handler to invoke when the time input is changed.
 
         :param widget: The TimeInput that was changed.
@@ -19,16 +17,11 @@ class OnChangeHandler(Protocol):
 
 
 class TimeInput(Widget):
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        value: datetime.time | None = None,
-        min: datetime.time | None = None,
-        max: datetime.time | None = None,
-        on_change: toga.widgets.timeinput.OnChangeHandler | None = None,
-        **kwargs,
-    ):
+
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        value: (datetime.time | None)=None, min: (datetime.time | None)=
+        None, max: (datetime.time | None)=None, on_change: (toga.widgets.
+        timeinput.OnChangeHandler | None)=None, **kwargs):
         """Create a new TimeInput widget.
 
         :param id: The ID for the widget.
@@ -42,19 +35,17 @@ class TimeInput(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
         self.on_change = None
         self.min = min
         self.max = max
-
         self.value = value
         self.on_change = on_change
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.TimeInput(interface=self)
 
     @property
-    def value(self) -> datetime.time:
+    def value(self) ->datetime.time:
         """The currently selected time. A value of ``None`` will be converted into the
         current time.
 
@@ -64,17 +55,15 @@ class TimeInput(Widget):
         return self._impl.get_value()
 
     @value.setter
-    def value(self, value: object) -> None:
+    def value(self, value: object) ->None:
         value = self._convert_time(value)
-
         if value < self.min:
             value = self.min
         elif value > self.max:
             value = self.max
-
         self._impl.set_value(value)
 
-    def _convert_time(self, value: object) -> datetime.time:
+    def _convert_time(self, value: object) ->datetime.time:
         if value is None:
             value = datetime.datetime.now().time()
         elif isinstance(value, datetime.datetime):
@@ -84,12 +73,11 @@ class TimeInput(Widget):
         elif isinstance(value, str):
             value = datetime.time.fromisoformat(value)
         else:
-            raise TypeError("Not a valid time value")
-
+            raise TypeError('Not a valid time value')
         return value.replace(microsecond=0)
 
     @property
-    def min(self) -> datetime.time:
+    def min(self) ->datetime.time:
         """The minimum allowable time (inclusive). A value of ``None`` will be converted
         into 00:00:00.
 
@@ -99,12 +87,11 @@ class TimeInput(Widget):
         return self._impl.get_min_time()
 
     @min.setter
-    def min(self, value: object) -> None:
+    def min(self, value: object) ->None:
         if value is None:
             min = datetime.time(0, 0, 0)
         else:
             min = self._convert_time(value)
-
         if self.max < min:
             self._impl.set_max_time(min)
         self._impl.set_min_time(min)
@@ -112,7 +99,7 @@ class TimeInput(Widget):
             self.value = min
 
     @property
-    def max(self) -> datetime.time:
+    def max(self) ->datetime.time:
         """The maximum allowable time (inclusive). A value of ``None`` will be converted
         into 23:59:59.
 
@@ -122,12 +109,11 @@ class TimeInput(Widget):
         return self._impl.get_max_time()
 
     @max.setter
-    def max(self, value: object) -> None:
+    def max(self, value: object) ->None:
         if value is None:
             max = datetime.time(23, 59, 59)
         else:
             max = self._convert_time(value)
-
         if self.min > max:
             self._impl.set_min_time(max)
         self._impl.set_max_time(max)
@@ -135,10 +121,11 @@ class TimeInput(Widget):
             self.value = max
 
     @property
-    def on_change(self) -> OnChangeHandler:
+    def on_change(self) ->OnChangeHandler:
         """The handler to invoke when the time value changes."""
         return self._on_change
 
     @on_change.setter
-    def on_change(self, handler: toga.widgets.timeinput.OnChangeHandler) -> None:
+    def on_change(self, handler: toga.widgets.timeinput.OnChangeHandler
+        ) ->None:
         self._on_change = wrapped_handler(self, handler)

@@ -1,42 +1,39 @@
 from __future__ import annotations
-
 import sys
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping, Sequence
 from typing import TYPE_CHECKING
-
 import toga
 from toga.command import Command, CommandSet, Group
 from toga.handlers import wrapped_handler
 from toga.icons import Icon
 from toga.platform import get_platform_factory
-
 if TYPE_CHECKING:
     from toga.icons import IconContentT
-
 _py_id = id
 
 
 class StatusIcon:
-    def __init__(self, icon: IconContentT | None = None):
+
+    def __init__(self, icon: (IconContentT | None)=None):
         """An abstract base class for all status icons."""
         self.factory = get_platform_factory()
-        self._impl = getattr(self.factory, self.__class__.__name__)(interface=self)
-
+        self._impl = getattr(self.factory, self.__class__.__name__)(interface
+            =self)
         self.icon = icon
 
     @property
     @abstractmethod
-    def id(self) -> str:
+    def id(self) ->str:
         """A unique identifier for the status icon."""
 
     @property
     @abstractmethod
-    def text(self) -> str:
+    def text(self) ->str:
         """A text label for the status icon."""
 
     @property
-    def icon(self) -> Icon | None:
+    def icon(self) ->(Icon | None):
         """The Icon to display in the status bar.
 
         When setting the icon, you can provide either an :any:`Icon` instance, or a
@@ -45,23 +42,19 @@ class StatusIcon:
         return self._icon
 
     @icon.setter
-    def icon(self, icon_or_name: IconContentT | None):
+    def icon(self, icon_or_name: (IconContentT | None)):
         if isinstance(icon_or_name, Icon) or icon_or_name is None:
             self._icon = icon_or_name
         else:
             self._icon = Icon(icon_or_name)
-
         self._impl.set_icon(self._icon)
 
 
 class SimpleStatusIcon(StatusIcon):
-    def __init__(
-        self,
-        id: str | None = None,
-        icon: IconContentT | None = None,
-        text: str | None = None,
-        on_press: toga.widgets.button.OnPressHandler | None = None,
-    ):
+
+    def __init__(self, id: (str | None)=None, icon: (IconContentT | None)=
+        None, text: (str | None)=None, on_press: (toga.widgets.button.
+        OnPressHandler | None)=None):
         """
         An button in a status bar or system tray.
 
@@ -76,38 +69,34 @@ class SimpleStatusIcon(StatusIcon):
         """
         super().__init__(icon=icon)
         self.on_press = on_press
-
-        self._id = f"statusicon-{_py_id(self)}" if id is None else id
+        self._id = f'statusicon-{_py_id(self)}' if id is None else id
         self._text = text if text is not None else toga.App.app.formal_name
 
     def __repr__(self):
-        return f"<SimpleStatusIcon {self.text!r}: {self.id}>"
+        return f'<SimpleStatusIcon {self.text!r}: {self.id}>'
 
     @property
-    def id(self) -> str:
+    def id(self) ->str:
         return self._id
 
     @property
-    def text(self) -> str:
+    def text(self) ->str:
         return self._text
 
     @property
-    def on_press(self) -> toga.widgets.button.OnPressHandler:
+    def on_press(self) ->toga.widgets.button.OnPressHandler:
         """The handler to invoke when the status icon is pressed."""
         return self._on_press
 
     @on_press.setter
-    def on_press(self, handler: toga.widgets.button.OnPressHandler) -> None:
+    def on_press(self, handler: toga.widgets.button.OnPressHandler) ->None:
         self._on_press = wrapped_handler(self, handler)
 
 
 class MenuStatusIcon(Group, StatusIcon):
-    def __init__(
-        self,
-        id: str | None = None,
-        icon: IconContentT | None = None,
-        text: str | None = None,
-    ):
+
+    def __init__(self, id: (str | None)=None, icon: (IconContentT | None)=
+        None, text: (str | None)=None):
         """
         An item in a status bar or system tray that displays a menu when pressed.
 
@@ -120,18 +109,17 @@ class MenuStatusIcon(Group, StatusIcon):
         :param text: A text label for the status icon. Defaults to the formal name of
             the app.
         """
-        Group.__init__(
-            self,
-            id=f"menustatusitem-{_py_id(self)}" if id is None else id,
-            text=(text if text is not None else toga.App.app.formal_name),
-        )
+        Group.__init__(self, id=f'menustatusitem-{_py_id(self)}' if id is
+            None else id, text=text if text is not None else toga.App.app.
+            formal_name)
         StatusIcon.__init__(self, icon=icon)
 
     def __repr__(self):
-        return f"<MenuStatusIcon {self.text!r}: {self.id}>"
+        return f'<MenuStatusIcon {self.text!r}: {self.id}>'
 
 
 class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
+
     def __init__(self):
         """An ordered collection of status icons.
 
@@ -140,7 +128,6 @@ class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
         """
         self.factory = get_platform_factory()
         self._impl = self.factory.StatusIconSet(interface=self)
-
         self.elements: dict[str, StatusIcon] = {}
         self.commands = CommandSet()
 
@@ -158,36 +145,25 @@ class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
         try:
             return next(self._menu_status_icons)
         except StopIteration:
-            # No menu status icons registered.
             return None
+        else:
+            pass
 
     def _create_standard_commands(self):
-        # Create the standard commands for the menu status icon. Use the standard
-        # constructor, but force the commands into *last* section of the COMMANDS group
-        # so they'll appear on the first MenuStatusIcon.
-        for cmd_id in [
-            Command.ABOUT,
-            Command.EXIT,
-        ]:
-            self.commands.add(
-                Command.standard(
-                    toga.App.app,
-                    cmd_id,
-                    section=sys.maxsize,
-                    group=Group.COMMANDS,
-                )
-            )
+        for cmd_id in [Command.ABOUT, Command.EXIT]:
+            self.commands.add(Command.standard(toga.App.app, cmd_id,
+                section=sys.maxsize, group=Group.COMMANDS))
 
-    def __iter__(self) -> Iterator[StatusIcon]:
+    def __iter__(self) ->Iterator[StatusIcon]:
         return iter(self.elements.values())
 
-    def __contains__(self, value: object) -> bool:
+    def __contains__(self, value: object) ->bool:
         if isinstance(value, str):
             return value in self.elements
         else:
             return value in self.elements.values()
 
-    def __len__(self) -> int:
+    def __len__(self) ->int:
         return len(self.elements)
 
     def __getitem__(self, index_or_id):
@@ -207,7 +183,6 @@ class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
                 self.elements[status_icon.id] = status_icon
                 status_icon._impl.create()
                 added = True
-
         if added and self.commands.on_change:
             self.commands.on_change()
 
@@ -221,11 +196,12 @@ class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
         try:
             self.elements.pop(status_icon.id)
             status_icon._impl.remove()
-
             if self.commands.on_change:
                 self.commands.on_change()
         except KeyError as exc:
-            raise ValueError("Not a known status icon.") from exc
+            raise ValueError('Not a known status icon.') from exc
+        else:
+            pass
 
     def clear(self):
         """Remove all the icons from the set.
@@ -233,10 +209,8 @@ class StatusIconSet(Sequence[StatusIcon], Mapping[str, StatusIcon]):
         :raises ValueError: If the status icon commands include any commands that
             reference an icon that has been removed.
         """
-        # Convert into a list so that we're not deleting from a list while iterating.
         for status_icon in list(self):
             self.elements.pop(status_icon.id)
             status_icon._impl.remove()
-
         if self.commands.on_change:
             self.commands.on_change()

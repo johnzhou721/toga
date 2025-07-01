@@ -1,7 +1,3 @@
-from toga.style.applicator import TogaApplicator  # noqa: F401
-from toga.style.pack import Pack  # noqa: F401
-
-__all__ = [
-    "Pack",
-    "TogaApplicator",
-]
+from toga.style.applicator import TogaApplicator
+from toga.style.pack import Pack
+__all__ = ['Pack', 'TogaApplicator']

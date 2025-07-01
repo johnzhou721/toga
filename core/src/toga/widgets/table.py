@@ -1,20 +1,17 @@
 from __future__ import annotations
-
 from collections.abc import Iterable
 from typing import Any, Literal, Protocol, TypeVar
-
 import toga
 from toga.handlers import wrapped_handler
 from toga.sources import ListSource, Row, Source
 from toga.sources.accessors import build_accessors, to_accessor
-
 from .base import StyleT, Widget
-
-SourceT = TypeVar("SourceT", bound=Source)
+SourceT = TypeVar('SourceT', bound=Source)
 
 
 class OnSelectHandler(Protocol):
-    def __call__(self, widget: Table, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Table, **kwargs: Any) ->object:
         """A handler to invoke when the table is selected.
 
         :param widget: The Table that was selected.
@@ -23,7 +20,8 @@ class OnSelectHandler(Protocol):
 
 
 class OnActivateHandler(Protocol):
-    def __call__(self, widget: Table, row: Any, **kwargs: Any) -> object:
+
+    def __call__(self, widget: Table, row: Any, **kwargs: Any) ->object:
         """A handler to invoke when the table is activated.
 
         :param widget: The Table that was activated.
@@ -33,19 +31,13 @@ class OnActivateHandler(Protocol):
 
 
 class Table(Widget):
-    def __init__(
-        self,
-        headings: Iterable[str] | None = None,
-        id: str | None = None,
-        style: StyleT | None = None,
-        data: SourceT | Iterable | None = None,
-        accessors: Iterable[str] | None = None,
-        multiple_select: bool = False,
-        on_select: toga.widgets.table.OnSelectHandler | None = None,
-        on_activate: toga.widgets.table.OnActivateHandler | None = None,
-        missing_value: str = "",
-        **kwargs,
-    ):
+
+    def __init__(self, headings: (Iterable[str] | None)=None, id: (str |
+        None)=None, style: (StyleT | None)=None, data: (SourceT | Iterable |
+        None)=None, accessors: (Iterable[str] | None)=None, multiple_select:
+        bool=False, on_select: (toga.widgets.table.OnSelectHandler | None)=
+        None, on_activate: (toga.widgets.table.OnActivateHandler | None)=
+        None, missing_value: str='', **kwargs):
         """Create a new Table widget.
 
         :param headings: The column headings for the table. Headings can only contain
@@ -80,38 +72,30 @@ class Table(Widget):
         self._headings: list[str] | None
         self._accessors: list[str]
         self._data: SourceT | ListSource
-
         if headings is not None:
-            self._headings = [heading.split("\n")[0] for heading in headings]
+            self._headings = [heading.split('\n')[0] for heading in headings]
             self._accessors = build_accessors(self._headings, accessors)
         elif accessors is not None:
             self._headings = None
             self._accessors = list(accessors)
         else:
             raise ValueError(
-                "Cannot create a table without either headings or accessors"
-            )
-
+                'Cannot create a table without either headings or accessors')
         self._multiple_select = multiple_select
-        self._missing_value = missing_value or ""
-
-        # Prime some properties that need to exist before the table is created.
+        self._missing_value = missing_value or ''
         self.on_select = None
         self.on_activate = None
         self._data = None
-
         super().__init__(id, style, **kwargs)
-
         self.data = data
-
         self.on_select = on_select
         self.on_activate = on_activate
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.Table(interface=self)
 
     @property
-    def enabled(self) -> Literal[True]:
+    def enabled(self) ->Literal[True]:
         """Is the widget currently enabled? i.e., can the user interact with the widget?
         Table widgets cannot be disabled; this property will always return True; any
         attempt to modify it will be ignored.
@@ -119,15 +103,15 @@ class Table(Widget):
         return True
 
     @enabled.setter
-    def enabled(self, value: object) -> None:
+    def enabled(self, value: object) ->None:
         pass
 
-    def focus(self) -> None:
+    def focus(self) ->None:
         """No-op; Table cannot accept input focus."""
         pass
 
     @property
-    def data(self) -> SourceT | ListSource:
+    def data(self) ->(SourceT | ListSource):
         """The data to display in the table.
 
         When setting this property:
@@ -143,24 +127,23 @@ class Table(Widget):
         return self._data
 
     @data.setter
-    def data(self, data: SourceT | Iterable | None) -> None:
+    def data(self, data: (SourceT | Iterable | None)) ->None:
         if data is None:
             self._data = ListSource(accessors=self._accessors, data=[])
         elif isinstance(data, Source):
             self._data = data
         else:
             self._data = ListSource(accessors=self._accessors, data=data)
-
         self._data.add_listener(self._impl)
         self._impl.change_source(source=self._data)
 
     @property
-    def multiple_select(self) -> bool:
+    def multiple_select(self) ->bool:
         """Does the table allow multiple rows to be selected?"""
         return self._multiple_select
 
     @property
-    def selection(self) -> list[Row] | Row | None:
+    def selection(self) ->(list[Row] | Row | None):
         """The current selection of the table.
 
         If multiple selection is enabled, returns a list of Row objects from the data
@@ -178,11 +161,11 @@ class Table(Widget):
         else:
             return self.data[selection]
 
-    def scroll_to_top(self) -> None:
+    def scroll_to_top(self) ->None:
         """Scroll the view so that the top of the list (first row) is visible."""
         self.scroll_to_row(0)
 
-    def scroll_to_row(self, row: int) -> None:
+    def scroll_to_row(self, row: int) ->None:
         """Scroll the view so that the specified row index is visible.
 
         :param row: The index of the row to make visible. Negative values refer to the
@@ -194,30 +177,31 @@ class Table(Widget):
             else:
                 self._impl.scroll_to_row(max(len(self.data) + row, 0))
 
-    def scroll_to_bottom(self) -> None:
+    def scroll_to_bottom(self) ->None:
         """Scroll the view so that the bottom of the list (last row) is visible."""
         self.scroll_to_row(-1)
 
     @property
-    def on_select(self) -> OnSelectHandler:
+    def on_select(self) ->OnSelectHandler:
         """The callback function that is invoked when a row of the table is selected."""
         return self._on_select
 
     @on_select.setter
-    def on_select(self, handler: toga.widgets.table.OnSelectHandler) -> None:
+    def on_select(self, handler: toga.widgets.table.OnSelectHandler) ->None:
         self._on_select = wrapped_handler(self, handler)
 
     @property
-    def on_activate(self) -> OnActivateHandler:
+    def on_activate(self) ->OnActivateHandler:
         """The callback function that is invoked when a row of the table is activated,
         usually with a double click or similar action."""
         return self._on_activate
 
     @on_activate.setter
-    def on_activate(self, handler: toga.widgets.table.OnActivateHandler) -> None:
+    def on_activate(self, handler: toga.widgets.table.OnActivateHandler
+        ) ->None:
         self._on_activate = wrapped_handler(self, handler)
 
-    def append_column(self, heading: str, accessor: str | None = None) -> None:
+    def append_column(self, heading: str, accessor: (str | None)=None) ->None:
         """Append a column to the end of the table.
 
         :param heading: The heading for the new column.
@@ -227,12 +211,8 @@ class Table(Widget):
         """
         self.insert_column(len(self._accessors), heading, accessor=accessor)
 
-    def insert_column(
-        self,
-        index: int | str,
-        heading: str,
-        accessor: str | None = None,
-    ) -> None:
+    def insert_column(self, index: (int | str), heading: str, accessor: (
+        str | None)=None) ->None:
         """Insert an additional column into the table.
 
         :param index: The index at which to insert the column, or the accessor of the
@@ -245,61 +225,53 @@ class Table(Widget):
         """
         if self._headings is None:
             if accessor is None:
-                raise ValueError("Must specify an accessor on a table without headings")
+                raise ValueError(
+                    'Must specify an accessor on a table without headings')
             heading = None
         elif not accessor:
             accessor = to_accessor(heading)
-
         if isinstance(index, str):
             index = self._accessors.index(index)
+        elif index < 0:
+            index = max(len(self._accessors) + index, 0)
         else:
-            # Re-interpret negative indices, and clip indices outside valid range.
-            if index < 0:
-                index = max(len(self._accessors) + index, 0)
-            else:
-                index = min(len(self._accessors), index)
-
+            index = min(len(self._accessors), index)
         if self._headings is not None:
             self._headings.insert(index, heading)
         self._accessors.insert(index, accessor)
-
         self._impl.insert_column(index, heading, accessor)
 
-    def remove_column(self, column: int | str) -> None:
+    def remove_column(self, column: (int | str)) ->None:
         """Remove a table column.
 
         :param column: The index of the column to remove, or the accessor of the column
             to remove.
         """
         if isinstance(column, str):
-            # Column is a string; use as-is
             index = self._accessors.index(column)
+        elif column < 0:
+            index = len(self._accessors) + column
         else:
-            if column < 0:
-                index = len(self._accessors) + column
-            else:
-                index = column
-
-        # Remove column
+            index = column
         if self._headings is not None:
             del self._headings[index]
         del self._accessors[index]
         self._impl.remove_column(index)
 
     @property
-    def headings(self) -> list[str] | None:
+    def headings(self) ->(list[str] | None):
         """The column headings for the table, or None if there are no headings
         (read-only)
         """
         return self._headings
 
     @property
-    def accessors(self) -> list[str]:
+    def accessors(self) ->list[str]:
         """The accessors used to populate the table (read-only)"""
         return self._accessors
 
     @property
-    def missing_value(self) -> str:
+    def missing_value(self) ->str:
         """The value that will be used when a data row doesn't provide a value for an
         attribute.
         """

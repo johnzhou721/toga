@@ -1,22 +1,15 @@
 from __future__ import annotations
-
 from collections.abc import Iterable, Iterator
 from typing import Any, Protocol
-
 import toga
 from toga.handlers import wrapped_handler
-
 from .base import StyleT, Widget
 
 
 class MapPin:
-    def __init__(
-        self,
-        location: toga.LatLng | tuple[float, float],
-        *,
-        title: str,
-        subtitle: str | None = None,
-    ):
+
+    def __init__(self, location: (toga.LatLng | tuple[float, float]), *,
+        title: str, subtitle: (str | None)=None):
         """Create a new map pin.
 
         :param location: A tuple describing the (latitude, longitude) for the pin.
@@ -26,48 +19,45 @@ class MapPin:
         self._location = toga.LatLng(*location)
         self._title = title
         self._subtitle = subtitle
-
-        # A pin isn't tied to a map at time of creation.
         self.interface: MapView | None = None
         self._native = None
 
-    def __repr__(self) -> str:
+    def __repr__(self) ->str:
         if self.subtitle:
-            label = f"; {self.title} - {self.subtitle}"
+            label = f'; {self.title} - {self.subtitle}'
         else:
-            label = f"; {self.title}"
-
-        return f"<MapPin @ {self.location}{label}>"
+            label = f'; {self.title}'
+        return f'<MapPin @ {self.location}{label}>'
 
     @property
-    def location(self) -> toga.LatLng:
+    def location(self) ->toga.LatLng:
         """The (latitude, longitude) where the pin is located."""
         return self._location
 
     @location.setter
-    def location(self, coord: toga.LatLng | tuple[float, float]) -> None:
+    def location(self, coord: (toga.LatLng | tuple[float, float])) ->None:
         self._location = toga.LatLng(*coord)
         if self.interface:
             self.interface._impl.update_pin(self)
 
     @property
-    def title(self) -> str:
+    def title(self) ->str:
         """The title of the pin."""
         return self._title
 
     @title.setter
-    def title(self, title: str) -> None:
+    def title(self, title: str) ->None:
         self._title = str(title)
         if self.interface:
             self.interface._impl.update_pin(self)
 
     @property
-    def subtitle(self) -> str | None:
+    def subtitle(self) ->(str | None):
         """The subtitle of the pin."""
         return self._subtitle
 
     @subtitle.setter
-    def subtitle(self, subtitle: str | None) -> None:
+    def subtitle(self, subtitle: (str | None)) ->None:
         if subtitle is not None:
             subtitle = str(subtitle)
         self._subtitle = subtitle
@@ -76,26 +66,26 @@ class MapPin:
 
 
 class MapPinSet:
-    def __init__(self, interface: MapView, pins: Iterable[MapPin] | None):
+
+    def __init__(self, interface: MapView, pins: (Iterable[MapPin] | None)):
         self.interface = interface
         self._pins: set[MapPin] = set()
-
         if pins is not None:
             for item in pins:
                 self.add(item)
 
-    def __repr__(self) -> str:
-        return f"<MapPinSet ({len(self)} pins)>"
+    def __repr__(self) ->str:
+        return f'<MapPinSet ({len(self)} pins)>'
 
-    def __iter__(self) -> Iterator[MapPin]:
+    def __iter__(self) ->Iterator[MapPin]:
         """Return an iterator over the pins on the map."""
         return iter(self._pins)
 
-    def __len__(self) -> int:
+    def __len__(self) ->int:
         """Return the number of pins being displayed."""
         return len(self._pins)
 
-    def add(self, pin: MapPin) -> None:
+    def add(self, pin: MapPin) ->None:
         """Add a new pin to the map.
 
         :param pin: The :any:`toga.MapPin` instance to add.
@@ -104,7 +94,7 @@ class MapPinSet:
         self._pins.add(pin)
         self.interface._impl.add_pin(pin)
 
-    def remove(self, pin: MapPin) -> None:
+    def remove(self, pin: MapPin) ->None:
         """Remove a pin from the map.
 
         :param pin: The  :any:`toga.MapPin` instance to remove.
@@ -113,7 +103,7 @@ class MapPinSet:
         self._pins.remove(pin)
         pin.interface = None
 
-    def clear(self) -> None:
+    def clear(self) ->None:
         """Remove all pins from the map."""
         for pin in self._pins:
             self.interface._impl.remove_pin(pin)
@@ -121,7 +111,9 @@ class MapPinSet:
 
 
 class OnSelectHandler(Protocol):
-    def __call__(self, widget: MapView, *, pin: MapPin, **kwargs: Any) -> object:
+
+    def __call__(self, widget: MapView, *, pin: MapPin, **kwargs: Any
+        ) ->object:
         """A handler that will be invoked when the user selects a map pin.
 
         :param widget: The MapView that was selected.
@@ -131,16 +123,11 @@ class OnSelectHandler(Protocol):
 
 
 class MapView(Widget):
-    def __init__(
-        self,
-        id: str | None = None,
-        style: StyleT | None = None,
-        location: toga.LatLng | tuple[float, float] | None = None,
-        zoom: int = 11,
-        pins: Iterable[MapPin] | None = None,
-        on_select: toga.widgets.mapview.OnSelectHandler | None = None,
-        **kwargs,
-    ):
+
+    def __init__(self, id: (str | None)=None, style: (StyleT | None)=None,
+        location: (toga.LatLng | tuple[float, float] | None)=None, zoom:
+        int=11, pins: (Iterable[MapPin] | None)=None, on_select: (toga.
+        widgets.mapview.OnSelectHandler | None)=None, **kwargs):
         """Create a new MapView widget.
 
         :param id: The ID for the widget.
@@ -156,24 +143,19 @@ class MapView(Widget):
         :param kwargs: Initial style properties.
         """
         super().__init__(id, style, **kwargs)
-
         self._pins = MapPinSet(self, pins)
-
         if location:
             self.location = location
         else:
-            # Default location is Perth, Australia. Because why not?
-            self.location = (-31.9559, 115.8606)
-
+            self.location = -31.9559, 115.8606
         self.zoom = zoom
-
         self.on_select = on_select
 
-    def _create(self) -> Any:
+    def _create(self) ->Any:
         return self.factory.MapView(interface=self)
 
     @property
-    def location(self) -> toga.LatLng:
+    def location(self) ->toga.LatLng:
         """The latitude/longitude where the map is centered.
 
         A tuple of ``(latitude, longitude)`` can be provided as input; this will be
@@ -182,11 +164,12 @@ class MapView(Widget):
         return self._impl.get_location()
 
     @location.setter
-    def location(self, coordinates: toga.LatLng | tuple[float, float]) -> None:
+    def location(self, coordinates: (toga.LatLng | tuple[float, float])
+        ) ->None:
         self._impl.set_location(toga.LatLng(*coordinates))
 
     @property
-    def zoom(self) -> int:
+    def zoom(self) ->int:
         """Set the zoom level for the map.
 
         The zoom level is an integer in the range 0-20 (inclusive). It can be used to
@@ -221,22 +204,21 @@ class MapView(Widget):
         return round(self._impl.get_zoom())
 
     @zoom.setter
-    def zoom(self, value: int) -> None:
+    def zoom(self, value: int) ->None:
         value = int(value)
         if value < 0:
             value = 0
         elif value > 20:
             value = 20
-
         self._impl.set_zoom(value)
 
     @property
-    def pins(self) -> MapPinSet:
+    def pins(self) ->MapPinSet:
         """The set of pins currently being displayed on the map"""
         return self._pins
 
     @property
-    def on_select(self) -> OnSelectHandler:
+    def on_select(self) ->OnSelectHandler:
         """The handler to invoke when the user selects a pin on a map.
 
         **Note:** This is not currently supported on GTK or Windows.
@@ -244,8 +226,8 @@ class MapView(Widget):
         return self._on_select
 
     @on_select.setter
-    def on_select(self, handler: toga.widgets.mapview.OnSelectHandler | None) -> None:
-        if handler and not getattr(self._impl, "SUPPORTS_ON_SELECT", True):
-            self.factory.not_implemented("MapView.on_select")
-
+    def on_select(self, handler: (toga.widgets.mapview.OnSelectHandler | None)
+        ) ->None:
+        if handler and not getattr(self._impl, 'SUPPORTS_ON_SELECT', True):
+            self.factory.not_implemented('MapView.on_select')
         self._on_select = wrapped_handler(self, handler)
