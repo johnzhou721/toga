@@ -29,6 +29,21 @@ single-page web apps, and console apps.
        :align: center
        :width: 450px
 
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :titlesonly:
+
+   tutorial/index
+   reference/index
+   how-to/index
+   background/index
+
+
+.. raw:: latex
+
+  \chapter{Components}
+  \let\oldchapter\chapter\let\chapter\section
 
 :ref:`Tutorial <tutorial>`
 --------------------------
@@ -55,15 +70,5 @@ Technical documentation such as :doc:`Toga's API <reference/api/index>`, details
 
 :doc:`Frequently asked questions </about/faq>`, :doc:`success stories </about/success>`, and other details about Toga as a project.
 
-
-
-.. toctree::
-   :maxdepth: 2
-   :hidden:
-   :titlesonly:
-
-   tutorial/index
-   how-to/index
-   topics/index
-   reference/index
-   about/index
+.. raw:: latex
+  \let\chapter\oldchapter
