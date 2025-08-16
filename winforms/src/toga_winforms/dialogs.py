@@ -11,7 +11,7 @@ from ctypes import (
 )
 from ctypes.wintypes import HWND
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Optional, Union, list
 
 import comtypes
 import comtypes.client
@@ -252,7 +252,7 @@ class FileDialog(BaseDialog):
         initial_directory: Union[os.PathLike, str],
         *,
         filename: Optional[str] = None,
-        file_types: Optional[List[str]] = None,
+        file_types: Optional[list[str]] = None,
     ):
         super().__init__()
         self.native: Union[IFileOpenDialog, IFileSaveDialog] = native
@@ -267,7 +267,7 @@ class FileDialog(BaseDialog):
             self._set_initial_directory(str(initial_directory))
 
         if file_types is not None:
-            filters: List[Tuple[str, str]] = [
+            filters: list[tuple[str, str]] = [
                 (f"{ext.upper()} files", f"*.{ext}") for ext in file_types
             ]
             filterspec = (COMDLG_FILTERSPEC * len(file_types))(
@@ -322,7 +322,7 @@ class SaveFileDialog(FileDialog):
         title: str,
         filename: str,
         initial_directory: Union[os.PathLike, str],
-        file_types: List[str],
+        file_types: list[str],
     ):
         super().__init__(
             comtypes.client.CreateObject(
@@ -345,7 +345,7 @@ class OpenFileDialog(FileDialog):
         self,
         title: str,
         initial_directory: Union[os.PathLike, str],
-        file_types: List[str],
+        file_types: list[str],
         multiple_select: bool,
     ):
         super().__init__(
@@ -363,9 +363,9 @@ class OpenFileDialog(FileDialog):
         # This is a stub method; we provide functionality using the COM API
         return self._get_filenames()
 
-    def _get_filenames(self) -> List[Path]:
+    def _get_filenames(self) -> list[Path]:
         assert isinstance(self.native, IFileOpenDialog)
-        results: List[Path] = []
+        results: list[Path] = []
         shell_item_array: IShellItemArray = self.native.GetResults()
         item_count: int = shell_item_array.GetCount()
         for i in range(item_count):
@@ -395,7 +395,7 @@ class SelectFolderDialog(FileDialog):
         self.native.SetOptions(FileOpenOptions.FOS_PICKFOLDERS)
         self.multiple_select: bool = multiple_select
 
-    def _get_filenames(self) -> Union[List[Path], Path]:
+    def _get_filenames(self) -> Union[list[Path], Path]:
         shell_item: IShellItem = self.native.GetResult()
         display_name: str = shell_item.GetDisplayName(0x80058000)  # SIGDN_FILESYSPATH
         return [Path(display_name)] if self.multiple_select else Path(display_name)

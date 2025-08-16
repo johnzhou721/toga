@@ -14,7 +14,6 @@ from toga_winforms.libs.com.identifiers import (
 from toga_winforms.libs.com.interfaces import IFileDialog, IShellItem
 
 if TYPE_CHECKING:
-
     from comtypes._memberspec import _ComMemberSpec
 
 

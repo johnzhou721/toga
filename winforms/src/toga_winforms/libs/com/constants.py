@@ -1,9 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from ctypes import Structure, c_int, c_ulong
 from ctypes.wintypes import LPCWSTR
 from enum import IntFlag
-from typing import TYPE_CHECKING, Sequence
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ctypes import _CData
