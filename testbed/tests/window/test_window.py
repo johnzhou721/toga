@@ -1042,7 +1042,8 @@ else:
 
         app.current_window = main_window
         await main_window_probe.wait_for_window("Setting main window as current window")
-        assert app.current_window == main_window
+        if app_probe.supports_current_window_assignment:
+            assert app.current_window == main_window
         assert_window_gain_focus(main_window)
         assert_window_lose_focus(second_window)
 
@@ -1050,7 +1051,8 @@ else:
         await second_window_probe.wait_for_window(
             "Setting second window as current window"
         )
-        assert app.current_window == second_window
+        if app_probe.supports_current_window_assignment:
+            assert app.current_window == second_window
         assert_window_gain_focus(second_window)
         assert_window_lose_focus(main_window)
 
