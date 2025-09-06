@@ -440,8 +440,8 @@ async def test_presentation_mode_exit_on_window_state_change(
         "App is in presentation mode", state=WindowState.PRESENTATION
     )
 
-    assert app.in_presentation_mode
     assert window1_probe.instantaneous_state == WindowState.PRESENTATION
+    assert app.in_presentation_mode
 
     # Changing window state of main window should make the app exit presentation mode.
     window1.state = new_window_state
