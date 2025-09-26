@@ -410,6 +410,9 @@ class Window:
         # Assign the content widget to the window.
         widget.window = self
 
+        # Orphan the widget
+        widget.parent = None
+
         # Track our new content
         self._content = widget
 
