@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 
 from toga_iOS.libs import UIApplication, UIWindow
@@ -9,6 +11,8 @@ from .probe import BaseProbe
 class WindowProbe(BaseProbe, DialogsMixin):
     supports_fullscreen = False
     supports_presentation = False
+    supports_as_image = True
+    supports_focus = True
 
     def __init__(self, app, window):
         super().__init__()
@@ -21,11 +25,28 @@ class WindowProbe(BaseProbe, DialogsMixin):
     async def wait_for_window(
         self,
         message,
-        minimize=False,
-        full_screen=False,
-        state_switch_not_from_normal=False,
+        state=None,
     ):
         await self.redraw(message)
+        if state:
+            timeout = 5
+            polling_interval = 0.1
+            exception = None
+            loop = asyncio.get_running_loop()
+            start_time = loop.time()
+            while (loop.time() - start_time) < timeout:
+                try:
+                    assert self.instantaneous_state == state
+                    return
+                except AssertionError as e:
+                    exception = e
+                    await asyncio.sleep(polling_interval)
+                    continue
+                raise exception
+
+    async def cleanup(self):
+        self.window.close()
+        await self.redraw("Closing window")
 
     @property
     def content_size(self):

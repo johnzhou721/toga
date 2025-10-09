@@ -1,33 +1,61 @@
 from __future__ import annotations
 
 from builtins import id as identifier
+from os import environ
 from typing import TYPE_CHECKING, Any, TypeVar
 from warnings import warn
 
-from travertino.declaration import BaseStyle
 from travertino.node import Node
+from travertino.style import BaseStyle
 
 from toga.platform import get_platform_factory
 from toga.style import Pack, TogaApplicator
+from toga.style.mixin import style_mixin
 
 if TYPE_CHECKING:
     from toga.app import App
     from toga.window import Window
 
+
 StyleT = TypeVar("StyleT", bound=BaseStyle)
+"""
+A type describing a style object. By default, this will be
+[Pack](/reference/style/pack.md), but Toga allows for other style representations.
+"""
+PackMixin = style_mixin(Pack)
 
 
 TAB = "    "
 
+# based on colors from https://davidmathlogic.com/colorblind
+DEBUG_BACKGROUND_PALETTE = [
+    "#d0e2ed",  # very light blue
+    "#f6d3be",  # soft orange
+    "#c7e7b2",  # light green
+    "#f0b2d6",  # light pink
+    "#b8d2e9",  # light blue
+    "#e5dab0",  # light yellow
+    "#d5c2ea",  # light lavender
+    "#b2e4e5",  # light teal
+    "#f8ccb0",  # light orange
+    "#e5e4af",  # light cream
+    "#bde2dc",  # soft turquoise
+]
 
-class Widget(Node):
+
+class Widget(Node, PackMixin):
     _MIN_WIDTH = 100
     _MIN_HEIGHT = 100
+
+    DEBUG_LAYOUT_ENABLED = False
+    _USE_DEBUG_BACKGROUND = False
+    _debug_color_index = 0
 
     def __init__(
         self,
         id: str | None = None,
         style: StyleT | None = None,
+        **kwargs,
     ):
         """Create a base Toga widget.
 
@@ -36,8 +64,23 @@ class Widget(Node):
         :param id: The ID for the widget.
         :param style: A style object. If no style is provided, a default style
             will be applied to the widget.
+        :param kwargs: Initial style properties.
         """
-        super().__init__(style=style if style is not None else Pack())
+        if style is None:
+            style = Pack(**kwargs)
+        elif kwargs:
+            style = style.copy()
+            style.update(**kwargs)
+
+        if self._USE_DEBUG_BACKGROUND:
+            if environ.get("TOGA_DEBUG_LAYOUT") == "1" or self.DEBUG_LAYOUT_ENABLED:
+                style.background_color = DEBUG_BACKGROUND_PALETTE[
+                    Widget._debug_color_index
+                ]
+                Widget._debug_color_index += 1
+                Widget._debug_color_index %= len(DEBUG_BACKGROUND_PALETTE)
+
+        super().__init__(style=style)
 
         self._id = str(id if id else identifier(self))
         self._window: Window | None = None
@@ -46,9 +89,9 @@ class Widget(Node):
         # Get factory and assign implementation
         self.factory = get_platform_factory()
 
-        ###########################################
-        # Backwards compatibility for Toga <= 0.4.8
-        ###########################################
+        ##################################################################
+        # 2024-12: Backwards compatibility for Toga < 0.5.0
+        ##################################################################
 
         # Just in case we're working with a third-party widget created before
         # the _create() mechanism was added, which has already defined its
@@ -68,35 +111,16 @@ class Widget(Node):
 
         self.applicator = TogaApplicator()
 
-        ##############################################
-        # Backwards compatibility for Travertino 0.3.0
-        ##############################################
-
-        # The below if block will execute when using Travertino 0.3.0. For future
-        # versions of Travertino, these assignments (and the reapply) will already have
-        # been handled "automatically" by assigning the applicator above; in that case,
-        # we want to avoid doing a second, redundant style reapplication.
-
-        # This whole section can be removed as soon as there's a newer version of
-        # Travertino to set as Toga's minimum requirement.
-
-        if not hasattr(self.applicator, "node"):  # pragma: no cover
-            self.applicator.node = self
-            self.style._applicator = self.applicator
-            self.style.reapply()
-
-        #############################
-        # End backwards compatibility
-        #############################
-
     def _create(self) -> Any:
         """Create a platform-specific implementation of this widget.
 
         A subclass of Widget should redefine this method to return its implementation.
         """
         warn(
-            "Widgets should create and return their implementation in ._create(). This "
-            "will be an exception in a future version.",
+            (
+                "Widgets should create and return their implementation in ._create(). "
+                "This will be an exception in a future version."
+            ),
             RuntimeWarning,
             stacklevel=2,
         )
@@ -109,16 +133,18 @@ class Widget(Node):
 
     @property
     def id(self) -> str:
-        """A unique identifier for the widget."""
+        """A unique identifier for the widget (read-only)."""
         return self._id
 
     @property
     def tab_index(self) -> int | None:
         """The position of the widget in the focus chain for the window.
 
-        .. note::
+        /// note | Note
 
-            This is a beta feature. The ``tab_index`` API may change in the future.
+        This is a beta feature. The `tab_index` API may change in the future.
+
+        ///
         """
         return self._impl.get_tab_index()
 
@@ -290,8 +316,8 @@ class Widget(Node):
         When setting the window for a widget, all children of this widget will be
         recursively assigned to the same window.
 
-        If the widget has a value for :any:`window`, it *must* also have a value for
-        :any:`app`.
+        If the widget has a value for [`window`][toga.Widget.window], it *must* also
+        have a value for [`app`][toga.Widget.app].
         """
         return self._window
 

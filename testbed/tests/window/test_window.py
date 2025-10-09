@@ -11,6 +11,13 @@ from toga.colors import CORNFLOWERBLUE, GOLDENROD, REBECCAPURPLE
 from toga.constants import WindowState
 from toga.style.pack import COLUMN, Pack
 
+from ..assertions import (
+    assert_window_gain_focus,
+    assert_window_lose_focus,
+    assert_window_on_hide,
+    assert_window_on_show,
+)
+
 
 def window_probe(app, window):
     module = import_module("tests_backend.window")
@@ -167,26 +174,25 @@ if toga.platform.current_platform in {"iOS", "android"}:
             final_state,
         }:
             pytest.xfail("This backend doesn't support fullscreen window state.")
-        if (
-            not main_window_probe.supports_presentation
-            and WindowState.PRESENTATION
-            in {
-                initial_state,
-                final_state,
-            }
-        ):
+        if not main_window_probe.supports_presentation and WindowState.PRESENTATION in {
+            initial_state,
+            final_state,
+        }:
             pytest.xfail("This backend doesn't support presentation window state.")
 
         # Set to initial state
         main_window.state = initial_state
-        await main_window_probe.wait_for_window(f"Main window is in {initial_state}")
-
+        # Wait for window animation before assertion.
+        await main_window_probe.wait_for_window(
+            f"Main window is in {initial_state}", state=initial_state
+        )
         assert main_window_probe.instantaneous_state == initial_state
 
         # Set to final state
         main_window.state = final_state
+        # Wait for window animation before assertion.
         await main_window_probe.wait_for_window(
-            f"Main window is in {final_state}", state_switch_not_from_normal=True
+            f"Main window is in {final_state}", state=final_state
         )
         assert main_window_probe.instantaneous_state == final_state
 
@@ -216,7 +222,10 @@ if toga.platform.current_platform in {"iOS", "android"}:
 
         # Set the window state:
         main_window.state = state
-        await main_window_probe.wait_for_window(f"Secondary window is in {state}")
+        # Wait for window animation before assertion.
+        await main_window_probe.wait_for_window(
+            f"Secondary window is in {state}", state=state
+        )
         assert main_window_probe.instantaneous_state == state
 
         # Set the window state the same as current:
@@ -247,7 +256,7 @@ if toga.platform.current_platform in {"iOS", "android"}:
             pytest.xfail("This backend doesn't support presentation window state.")
 
         main_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await main_window_probe.wait_for_window("Main window is shown")
 
         assert main_window_probe.instantaneous_state == WindowState.NORMAL
@@ -256,8 +265,7 @@ if toga.platform.current_platform in {"iOS", "android"}:
         main_window.state = state
         # Add delay to ensure windows are visible after animation.
         await main_window_probe.wait_for_window(
-            f"Main window is in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Main window is in {state}", state=state
         )
         assert main_window_probe.instantaneous_state == state
         # At least one of the dimension should have increased.
@@ -267,9 +275,9 @@ if toga.platform.current_platform in {"iOS", "android"}:
         )
 
         main_window.state = state
+        # Wait for window animation before assertion.
         await main_window_probe.wait_for_window(
-            f"Main window is still in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Main window is still in {state}", state=state
         )
         assert main_window_probe.instantaneous_state == state
         # At least one of the dimension should have increased.
@@ -279,10 +287,9 @@ if toga.platform.current_platform in {"iOS", "android"}:
         )
 
         main_window.state = WindowState.NORMAL
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await main_window_probe.wait_for_window(
-            f"Main window is not in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Main window is not in {state}", state=WindowState.NORMAL
         )
         assert main_window_probe.instantaneous_state == WindowState.NORMAL
         assert main_window_probe.content_size == initial_content_size
@@ -331,7 +338,8 @@ else:
         assert second_window.size == (640, 480)
         # Position should be cascaded; the exact position depends on the platform,
         # and how many windows have been created. As long as it's not at (100,100).
-        assert second_window.position != (100, 100)
+        if second_window_probe.supports_placement:
+            assert second_window.position != (100, 100)
 
         assert second_window_probe.is_resizable
         if second_window_probe.supports_closable:
@@ -349,7 +357,11 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 300), size=(300, 200)),
+                {
+                    "title": "Secondary Window",
+                    "position": (200, 300),
+                    "size": (300, 200),
+                },
             )
         ],
     )
@@ -438,7 +450,11 @@ else:
         [
             (
                 toga.MainWindow,
-                dict(title="Secondary Window", position=(200, 300), size=(400, 200)),
+                {
+                    "title": "Secondary Window",
+                    "position": (200, 300),
+                    "size": (400, 200),
+                },
             )
         ],
     )
@@ -457,7 +473,11 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Not Resizable", resizable=False, position=(200, 150)),
+                {
+                    "title": "Not Resizable",
+                    "resizable": False,
+                    "position": (200, 150),
+                },
             )
         ],
     )
@@ -471,7 +491,11 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Not Closeable", closable=False, position=(200, 150)),
+                {
+                    "title": "Not Closeable",
+                    "closable": False,
+                    "position": (200, 150),
+                },
             )
         ],
     )
@@ -503,7 +527,11 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Not Minimizable", minimizable=False, position=(200, 150)),
+                {
+                    "title": "Not Minimizable",
+                    "minimizable": False,
+                    "position": (200, 150),
+                },
             )
         ],
     )
@@ -524,7 +552,10 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 150)),
+                {
+                    "title": "Secondary Window",
+                    "position": (200, 150),
+                },
             )
         ],
     )
@@ -581,10 +612,10 @@ else:
             assert second_window.position == (300, 150)
 
         second_window_probe.minimize()
-        # Delay is required to account for "genie" animations
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
             "Window has been minimized",
-            minimize=True,
+            state=WindowState.MINIMIZED,
         )
 
         if second_window_probe.supports_minimize:
@@ -592,10 +623,10 @@ else:
 
         if second_window_probe.supports_unminimize:
             second_window_probe.unminimize()
-            # Delay is required to account for "genie" animations
+            # Wait for window animation before assertion.
             await second_window_probe.wait_for_window(
                 "Window has been unminimized",
-                minimize=True,
+                state=WindowState.NORMAL,
             )
 
             assert not second_window_probe.is_minimized
@@ -612,7 +643,10 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 150)),
+                {
+                    "title": "Secondary Window",
+                    "position": (200, 150),
+                },
             )
         ],
     )
@@ -705,7 +739,7 @@ else:
         [
             (
                 toga.MainWindow,
-                dict(title="Secondary Window", position=(200, 150)),
+                {"title": "Secondary Window", "position": (200, 150)},
             )
         ],
     )
@@ -728,30 +762,58 @@ else:
         second_window.toolbar.add(app.cmd1)
         second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
         second_window.show()
-        # Add delay to ensure windows are visible after animation.
+        second_window.on_show = Mock()
+        second_window.on_hide = Mock()
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window("Secondary window is visible")
         assert second_window_probe.instantaneous_state == WindowState.NORMAL
 
         # Set to initial state
         second_window.state = initial_state
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is in {initial_state}",
-            minimize=True if initial_state == WindowState.MINIMIZED else False,
-            full_screen=True if initial_state == WindowState.FULLSCREEN else False,
+            f"Secondary window is in {initial_state}", state=initial_state
         )
         assert second_window_probe.instantaneous_state == initial_state
 
+        # Check for visibility event notification
+        if initial_state == WindowState.MINIMIZED:
+            # on_hide() will be triggered, as it was set to a
+            # not-visible-to-user(minimized) state.
+            assert_window_on_hide(second_window)
+        else:
+            # on_show() will not be triggered again, as it was
+            # already in a visible-to-user(not hidden) state, and
+            # was set to a visible-to-user(not minimized) state.
+            assert_window_on_show(second_window, trigger_expected=False)
+
         # Set to final state
         second_window.state = final_state
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is in {final_state}",
-            state_switch_not_from_normal=(
-                True if initial_state != WindowState.NORMAL else False
-            ),
+            f"Secondary window is in {final_state}", state=final_state
         )
         assert second_window_probe.instantaneous_state == final_state
+
+        # Check for visibility event notification
+        if initial_state == WindowState.MINIMIZED:
+            if final_state == WindowState.MINIMIZED:
+                # on_hide() will not be triggered again, as it was
+                # already in a not-visible-to-user(minimized) state.
+                assert_window_on_hide(second_window, trigger_expected=False)
+            else:
+                # on_show() will be triggered, as it was previously
+                # in a not-visible-to-user(minimized) state.
+                assert_window_on_show(second_window)
+        else:
+            if final_state == WindowState.MINIMIZED:
+                # on_hide() will be triggered, as it was previously
+                # in a visible-to-user(not minimized) state.
+                assert_window_on_hide(second_window)
+            else:
+                # on_show() will not be triggered again, as it was
+                # already in a visible-to-user(not minimized) state.
+                assert_window_on_show(second_window, trigger_expected=False)
 
     @pytest.mark.parametrize(
         "states",
@@ -774,7 +836,7 @@ else:
         [
             (
                 toga.MainWindow,
-                dict(title="Secondary Window", position=(200, 150)),
+                {"title": "Secondary Window", "position": (200, 150)},
             )
         ],
     )
@@ -793,7 +855,7 @@ else:
         second_window.toolbar.add(app.cmd1)
         second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
         second_window.show()
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window("Secondary window is visible")
         assert second_window_probe.instantaneous_state == WindowState.NORMAL
 
@@ -801,10 +863,9 @@ else:
         # to test that the backend can handle rapid window state assignments.
         for state in states:
             second_window.state = state
-
-        # Add delay to ensure windows are visible after the final state animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is in {states[-1]}", state_switch_not_from_normal=True
+            f"Secondary window is in {states[-1]}", state=states[-1]
         )
 
         # Verify that the backend handled rapid assignments by checking if
@@ -826,7 +887,7 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 150)),
+                {"title": "Secondary Window", "position": (200, 150)},
             )
         ],
     )
@@ -842,16 +903,14 @@ else:
 
         second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
         second_window.show()
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window("Secondary window is shown")
 
         # Set the window state:
         second_window.state = state
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is in {state}",
-            minimize=True if state == WindowState.MINIMIZED else False,
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Secondary window is in {state}", state=state
         )
         assert second_window_probe.instantaneous_state == state
 
@@ -873,7 +932,7 @@ else:
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 150)),
+                {"title": "Secondary Window", "position": (200, 150)},
             )
         ],
     )
@@ -884,7 +943,7 @@ else:
         to maximized, fullscreen or presentation."""
         second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
         second_window.show()
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window("Secondary window is shown")
 
         assert second_window_probe.instantaneous_state == WindowState.NORMAL
@@ -892,10 +951,9 @@ else:
         initial_content_size = second_window_probe.content_size
 
         second_window.state = state
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Secondary window is in {state}", state=state
         )
         assert second_window_probe.instantaneous_state == state
         assert second_window_probe.content_size[0] > initial_content_size[0]
@@ -903,29 +961,130 @@ else:
 
         second_window.state = state
         await second_window_probe.wait_for_window(
-            f"Secondary window is still in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Secondary window is still in {state}", state=state
         )
         assert second_window_probe.instantaneous_state == state
         assert second_window_probe.content_size[0] > initial_content_size[0]
         assert second_window_probe.content_size[1] > initial_content_size[1]
 
         second_window.state = WindowState.NORMAL
-        # Add delay to ensure windows are visible after animation.
+        # Wait for window animation before assertion.
         await second_window_probe.wait_for_window(
-            f"Secondary window is not in {state}",
-            full_screen=True if state == WindowState.FULLSCREEN else False,
+            f"Secondary window is not in {state}", state=WindowState.NORMAL
         )
         assert second_window_probe.instantaneous_state == WindowState.NORMAL
         assert second_window_probe.is_resizable
         assert second_window_probe.content_size == initial_content_size
 
     @pytest.mark.parametrize(
+        "state",
+        [
+            WindowState.NORMAL,
+            WindowState.MAXIMIZED,
+            # Window cannot be hidden while in MINIMIZED, FULLSCREEN or
+            # PRESENTATION. So, those states are excluded from this test.
+        ],
+    )
+    @pytest.mark.parametrize(
         "second_window_class, second_window_kwargs",
         [
             (
                 toga.Window,
-                dict(title="Secondary Window", position=(200, 150)),
+                {"title": "Secondary Window", "position": (200, 150)},
+            )
+        ],
+    )
+    async def test_window_state_when_window_hidden(
+        second_window, second_window_probe, state
+    ):
+        """When a window is hidden using hide(), the window.state getter should
+        continue to report the same state as it did when the window was last visible."""
+        second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
+        second_window.show()
+        # Wait for window animation before assertion.
+        await second_window_probe.wait_for_window("Secondary window is shown")
+
+        second_window.state = state
+        # Wait for window animation before assertion.
+        await second_window_probe.wait_for_window(
+            f"Secondary window is in {state}", state=state
+        )
+        assert second_window_probe.instantaneous_state == state
+        window_state_before_hidden = second_window.state
+
+        second_window.hide()
+        await second_window_probe.wait_for_window("Secondary window is hidden")
+        assert second_window.state == window_state_before_hidden
+
+    @pytest.mark.parametrize(
+        "second_window_class, second_window_kwargs",
+        [
+            (
+                toga.Window,
+                {"title": "Secondary Window", "position": (200, 150)},
+            )
+        ],
+    )
+    async def test_focus_events(
+        app, main_window, main_window_probe, second_window, second_window_probe
+    ):
+        """The window can trigger on_gain_focus() and on_lose_focus()
+        event handlers, when the window gains or loses input focus."""
+        if not main_window_probe.supports_focus:
+            pytest.skip("GTK4 doesn't yet support gain and lose focus.")
+
+        main_window.on_gain_focus = Mock()
+        main_window.on_lose_focus = Mock()
+        second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
+        second_window.show()
+        second_window.on_gain_focus = Mock()
+        second_window.on_lose_focus = Mock()
+
+        app.current_window = main_window
+        await main_window_probe.wait_for_window("Setting main window as current window")
+        assert app.current_window == main_window
+        assert_window_gain_focus(main_window)
+        assert_window_lose_focus(second_window)
+
+        app.current_window = second_window
+        await second_window_probe.wait_for_window(
+            "Setting second window as current window"
+        )
+        assert app.current_window == second_window
+        assert_window_gain_focus(second_window)
+        assert_window_lose_focus(main_window)
+
+    @pytest.mark.parametrize(
+        "second_window_class, second_window_kwargs",
+        [
+            (
+                toga.Window,
+                {"title": "Secondary Window", "position": (200, 150)},
+            )
+        ],
+    )
+    async def test_visibility_events(second_window, second_window_probe):
+        """The window can trigger on_show() and on_hide() event handlers,
+        when the window is shown or hidden respectively."""
+        second_window.content = toga.Box(style=Pack(background_color=CORNFLOWERBLUE))
+        second_window.show()
+        second_window.on_show = Mock()
+        second_window.on_hide = Mock()
+
+        second_window.hide()
+        await second_window_probe.wait_for_window(f"Hiding {second_window.title}")
+        assert_window_on_hide(second_window)
+
+        second_window.show()
+        await second_window_probe.wait_for_window(f"Showing {second_window.title}")
+        assert_window_on_show(second_window)
+
+    @pytest.mark.parametrize(
+        "second_window_class, second_window_kwargs",
+        [
+            (
+                toga.Window,
+                {"title": "Secondary Window", "position": (200, 150)},
             )
         ],
     )
@@ -933,19 +1092,22 @@ else:
         """The window can be relocated to another screen, using both absolute and
         relative screen positions."""
 
+        if not second_window_probe.supports_placement:
+            pytest.xfail("This backend doesn't support window placement.")
         initial_position = second_window.position
 
         # Move the window using absolute position.
         second_window.position = (200, 200)
         await second_window_probe.wait_for_window("Secondary window has been moved")
-        if second_window_probe.supports_placement:
-            assert second_window.position != initial_position
+        assert second_window.position != initial_position
 
         # `position` and `screen_position` will be same as the window will be in
-        # primary screen.
-        if second_window_probe.supports_placement:
-            assert second_window.position == (200, 200)
-            assert second_window.screen_position == (200, 200)
+        # primary screen. They are also 2-tuples of integers
+        assert second_window.position == (200, 200)
+        assert all(isinstance(val, int) for val in second_window.position)
+
+        assert second_window.screen_position == (200, 200)
+        assert all(isinstance(val, int) for val in second_window.screen_position)
 
         # Move the window between available screens and assert its `screen_position`
         for screen in second_window.app.screens:
@@ -958,14 +1120,16 @@ else:
                 second_window.position[0] - screen.origin[0],
                 second_window.position[1] - screen.origin[1],
             )
+            assert all(isinstance(val, int) for val in second_window.screen_position)
 
 
 async def test_as_image(main_window, main_window_probe):
     """The window can be captured as a screenshot"""
 
-    screenshot = main_window.as_image()
-    main_window_probe.assert_image_size(
-        screenshot.size,
-        main_window_probe.content_size,
-        screen=main_window.screen,
-    )
+    if main_window_probe.supports_as_image:
+        screenshot = main_window.as_image()
+        main_window_probe.assert_image_size(
+            screenshot.size,
+            main_window_probe.content_size,
+            screen=main_window.screen,
+        )

@@ -2,7 +2,7 @@ import asyncio
 
 import pytest
 
-from toga_gtk.libs import Gtk
+from toga_gtk.libs import GTK_VERSION, Gtk
 
 from .base import SimpleProbe
 
@@ -12,6 +12,9 @@ class TreeProbe(SimpleProbe):
     supports_keyboard_shortcuts = False
     supports_widgets = False
 
+    if GTK_VERSION >= (4, 0, 0):
+        pytest.skip("GTK4 doesn't support trees yet")
+
     def __init__(self, widget):
         super().__init__(widget)
         self.native_tree = widget._impl.native_tree
@@ -20,6 +23,10 @@ class TreeProbe(SimpleProbe):
     @property
     def background_color(self):
         pytest.skip("Can't set background color on GTK Tables")
+
+    @property
+    def has_focus(self):
+        return self.native_tree.has_focus()
 
     async def expand_tree(self):
         self.native_tree.expand_all()

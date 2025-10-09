@@ -10,7 +10,7 @@ from .base import StyleT, Widget
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: TextInput, **kwargs: Any) -> object:
+    def __call__(self, widget: TextInput, **kwargs: Any) -> None:
         """A handler to invoke when the text input is changed.
 
         :param widget: The TextInput that was changed.
@@ -19,7 +19,7 @@ class OnChangeHandler(Protocol):
 
 
 class OnConfirmHandler(Protocol):
-    def __call__(self, widget: TextInput, **kwargs: Any) -> object:
+    def __call__(self, widget: TextInput, **kwargs: Any) -> None:
         """A handler to invoke when the text input is confirmed.
 
         :param widget: The TextInput that was confirmed.
@@ -28,7 +28,7 @@ class OnConfirmHandler(Protocol):
 
 
 class OnGainFocusHandler(Protocol):
-    def __call__(self, widget: TextInput, **kwargs: Any) -> object:
+    def __call__(self, widget: TextInput, **kwargs: Any) -> None:
         """A handler to invoke when the text input gains focus.
 
         :param widget: The TextInput that gained focus.
@@ -37,7 +37,7 @@ class OnGainFocusHandler(Protocol):
 
 
 class OnLoseFocusHandler(Protocol):
-    def __call__(self, widget: TextInput, **kwargs: Any) -> object:
+    def __call__(self, widget: TextInput, **kwargs: Any) -> None:
         """A handler to invoke when the text input loses focus.
 
         :param widget: The TextInput that lost focus.
@@ -46,8 +46,6 @@ class OnLoseFocusHandler(Protocol):
 
 
 class TextInput(Widget):
-    """Create a new single-line text input widget."""
-
     def __init__(
         self,
         id: str | None = None,
@@ -60,8 +58,10 @@ class TextInput(Widget):
         on_gain_focus: OnGainFocusHandler | None = None,
         on_lose_focus: OnLoseFocusHandler | None = None,
         validators: Iterable[Callable[[str], bool]] | None = None,
+        **kwargs,
     ):
-        """
+        """Create a new single-line text input widget.
+
         :param id: The ID for the widget.
         :param style: A style object. If no style is provided, a default style will be
             applied to the widget.
@@ -78,8 +78,9 @@ class TextInput(Widget):
         :param on_lose_focus: A handler that will be invoked when the widget loses
             input focus.
         :param validators: A list of validators to run on the value of the input.
+        :param kwargs: Initial style properties.
         """
-        super().__init__(id=id, style=style)
+        super().__init__(id, style, **kwargs)
 
         self.placeholder = placeholder
         self.readonly = readonly
@@ -109,7 +110,7 @@ class TextInput(Widget):
 
         This only controls manual changes by the user (i.e., typing at the
         keyboard). Programmatic changes are permitted while the widget has
-        ``readonly`` enabled.
+        `readonly` enabled.
         """
         return self._impl.get_readonly()
 
@@ -121,8 +122,8 @@ class TextInput(Widget):
     def placeholder(self) -> str:
         """The placeholder text for the widget.
 
-        A value of ``None`` will be interpreted and returned as an empty string.
-        Any other object will be converted to a string using ``str()``.
+        A value of `None` will be interpreted and returned as an empty string.
+        Any other object will be converted to a string using `str()`.
         """
         return self._impl.get_placeholder()
 
@@ -135,10 +136,10 @@ class TextInput(Widget):
     def value(self) -> str:
         """The text to display in the widget.
 
-        A value of ``None`` will be interpreted and returned as an empty string.
-        Any other object will be converted to a string using ``str()``.
+        A value of `None` will be interpreted and returned as an empty string.
+        Any other object will be converted to a string using `str()`.
 
-        Any newline (``\\n``) characters in the string will be replaced with a space.
+        Any newline (`\\n`) characters in the string will be replaced with a space.
 
         Validation will be performed as a result of changing widget value.
         """

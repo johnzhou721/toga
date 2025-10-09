@@ -2,7 +2,6 @@ import ctypes
 from ctypes import c_uint
 from ctypes.wintypes import HWND, LPARAM
 
-import pytest
 from System.Windows.Forms import TextBox
 
 from .base import SimpleProbe
@@ -11,7 +10,6 @@ from .properties import toga_x_text_align
 
 class TextInputProbe(SimpleProbe):
     native_class = TextBox
-    background_supports_alpha = False
     fixed_height = 23
 
     @property
@@ -41,7 +39,7 @@ class TextInputProbe(SimpleProbe):
 
     @property
     def placeholder_hides_on_focus(self):
-        False
+        return False
 
     @property
     def readonly(self):
@@ -56,4 +54,5 @@ class TextInputProbe(SimpleProbe):
         pass
 
     def set_cursor_at_end(self):
-        pytest.skip("Cursor positioning not supported on this platform")
+        self.native.SelectionStart = len(self.native.Text)
+        self.native.SelectionLength = 0

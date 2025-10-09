@@ -71,10 +71,6 @@ class TogaTable(NSTableView):
             tcv = TogaIconView.alloc().init()
             tcv.identifier = identifier
 
-            # Prevent tcv from being deallocated prematurely when no Python references
-            # are left
-            tcv.autorelease()
-
         tcv.setText(str(value))
         if icon:
             tcv.setImage(icon._impl.native)
@@ -212,7 +208,7 @@ class Table(Widget):
             selection = []
 
             current_index = self.native_table.selectedRowIndexes.firstIndex
-            for i in range(self.native_table.selectedRowIndexes.count):
+            for _ in range(self.native_table.selectedRowIndexes.count):
                 selection.append(current_index)
                 current_index = (
                     self.native_table.selectedRowIndexes.indexGreaterThanIndex(

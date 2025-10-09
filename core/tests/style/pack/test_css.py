@@ -17,6 +17,7 @@ from toga.style.pack import (
     RIGHT,
     ROW,
     RTL,
+    SERIF,
     SMALL_CAPS,
     START,
     SYSTEM,
@@ -268,6 +269,33 @@ from toga.style.pack import (
             "flex-direction: column; flex: 0.0 0 auto; align-items: center;",
             id="column-align_items-center",
         ),
+        # justify_content
+        pytest.param(
+            Pack(justify_content=START),
+            "flex-direction: row; flex: 0.0 0 auto;",
+            id="gap-start",
+        ),
+        pytest.param(
+            Pack(justify_content=CENTER),
+            "flex-direction: row; flex: 0.0 0 auto; justify-content: center;",
+            id="gap-center",
+        ),
+        pytest.param(
+            Pack(justify_content=END),
+            "flex-direction: row; flex: 0.0 0 auto; justify-content: end;",
+            id="gap-end",
+        ),
+        # Gap
+        pytest.param(
+            Pack(gap=42),
+            "flex-direction: row; flex: 0.0 0 auto; gap: 42px;",
+            id="gap",
+        ),
+        pytest.param(
+            Pack(gap=0),
+            "flex-direction: row; flex: 0.0 0 auto;",
+            id="gap-0",
+        ),
         # Margin
         pytest.param(
             Pack(margin_top=42),
@@ -327,7 +355,7 @@ from toga.style.pack import (
         # Color
         pytest.param(
             Pack(color=REBECCAPURPLE),
-            "flex-direction: row; flex: 0.0 0 auto; color: rgb(102, 51, 153);",
+            "flex-direction: row; flex: 0.0 0 auto; color: rgb(102 51 153 / 1.0);",
             id="color",
         ),
         # Background Color
@@ -335,7 +363,7 @@ from toga.style.pack import (
             Pack(background_color=REBECCAPURPLE),
             (
                 "flex-direction: row; flex: 0.0 0 auto; "
-                "background-color: rgb(102, 51, 153);"
+                "background-color: rgb(102 51 153 / 1.0);"
             ),
             id="background-color",
         ),
@@ -380,6 +408,23 @@ from toga.style.pack import (
         pytest.param(
             Pack(font_family="Times New Roman"),
             'flex-direction: row; flex: 0.0 0 auto; font-family: "Times New Roman";',
+            id="font-family",
+        ),
+        pytest.param(
+            Pack(font_family=["Times New Roman"]),
+            'flex-direction: row; flex: 0.0 0 auto; font-family: "Times New Roman";',
+            id="font-family",
+        ),
+        pytest.param(
+            Pack(font_family=["Times New Roman", SERIF]),
+            'flex-direction: row; flex: 0.0 0 auto; font-family: "Times New Roman", '
+            "serif;",
+            id="font-family",
+        ),
+        pytest.param(
+            Pack(font_family=["Times New Roman", "Courier", SERIF]),
+            'flex-direction: row; flex: 0.0 0 auto; font-family: "Times New Roman", '
+            "Courier, serif;",
             id="font-family",
         ),
         pytest.param(

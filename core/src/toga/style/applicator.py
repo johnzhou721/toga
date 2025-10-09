@@ -13,14 +13,25 @@ warnings.filterwarnings("default", category=DeprecationWarning)
 class TogaApplicator:
     """Apply styles to a Toga widget."""
 
+    ######################################################################
+    # 2024-12: Backwards compatibility for < 0.5.0
+    ######################################################################
+
     def __init__(self, widget: None = None):
         if widget is not None:
             warnings.warn(
-                "Widget parameter is deprecated. Applicator will be given a reference "
-                "to its widget when it is assigned as that widget's applicator.",
+                (
+                    "Widget parameter is deprecated. Applicator will be given a "
+                    "reference to its widget when it is assigned as that widget's "
+                    "applicator."
+                ),
                 DeprecationWarning,
                 stacklevel=2,
             )
+
+    ######################################################################
+    # End backwards compatibility
+    ######################################################################
 
     @property
     def widget(self) -> Widget:
@@ -65,10 +76,7 @@ class TogaApplicator:
             child.applicator.set_hidden(hidden or child.style._hidden)
 
     def set_font(self, font: object) -> None:
-        # Changing the font of a widget can make the widget change size,
-        # which in turn means we need to do a re-layout
         self.widget._impl.set_font(font)
-        self.widget.refresh()
 
     def set_color(self, color: object) -> None:
         self.widget._impl.set_color(color)

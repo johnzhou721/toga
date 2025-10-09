@@ -2,7 +2,14 @@ from abc import abstractmethod
 
 from travertino.size import at_least
 
-from ..libs import Gtk, get_background_color_css, get_color_css, get_font_css
+from ..libs import (
+    GTK_VERSION,
+    GLib,
+    Gtk,
+    get_background_color_css,
+    get_color_css,
+    get_font_css,
+)
 
 
 class Widget:
@@ -21,7 +28,10 @@ class Widget:
         # Ensure the native widget has GTK CSS style attributes; create() should
         # ensure any other widgets are also styled appropriately.
         self.native.set_name(f"toga-{self.interface.id}")
-        self.native.get_style_context().add_class("toga")
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            self.native.get_style_context().add_class("toga")
+        else:  # pragma: no-cover-if-gtk3
+            self.native.add_css_class("toga")
 
     @abstractmethod
     def create(self): ...
@@ -52,8 +62,11 @@ class Widget:
         elif container:
             # setting container, adding self to container.native
             self._container = container
-            self._container.add(self.native)
-            self.native.show_all()
+            if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+                self._container.add(self.native)
+                self.native.show_all()
+            else:  # pragma: no-cover-if-gtk3
+                self._container.append(self.native)
 
         for child in self.interface.children:
             child._impl.container = container
@@ -68,7 +81,18 @@ class Widget:
 
     @property
     def has_focus(self):
-        return self.native.has_focus()
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            return self.native.has_focus()
+        else:  # pragma: no-cover-if-gtk3
+            root = self.native.get_root()
+            focus_widget = root.get_focus()
+            if focus_widget:
+                if focus_widget == self.native:
+                    return self.native.has_focus()
+                else:
+                    return focus_widget.is_ancestor(self.native)
+            else:
+                return False
 
     def focus(self):
         if not self.has_focus:
@@ -181,14 +205,28 @@ class Widget:
 
     def rehint(self):
         # Perform the actual GTK rehint.
-        # print(
-        #     "REHINT",
-        #     self,
-        #     self.native.get_preferred_width(),
-        #     self.native.get_preferred_height(),
-        # )
-        width = self.native.get_preferred_width()
-        height = self.native.get_preferred_height()
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            # print(
+            #     "REHINT",
+            #     self,
+            #     self.native.get_preferred_width(),
+            #     self.native.get_preferred_height(),
+            # )
+            width = self.native.get_preferred_width()
+            height = self.native.get_preferred_height()
 
-        self.interface.intrinsic.width = at_least(width[0])
-        self.interface.intrinsic.height = at_least(height[0])
+            self.interface.intrinsic.width = at_least(width[0])
+            self.interface.intrinsic.height = at_least(height[0])
+        else:  # pragma: no-cover-if-gtk3
+            min_size, _ = self.native.get_preferred_size()
+            # print("REHINT", self, f"{width_info[0]}x{height_info[0]}")
+            self.interface.intrinsic.width = at_least(min_size.width)
+            self.interface.intrinsic.height = at_least(min_size.height)
+
+    def flush_gtk_events(self):
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            while Gtk.events_pending():
+                Gtk.main_iteration_do(blocking=False)
+        else:  # pragma: no-cover-if-gtk3
+            while GLib.main_context_default().pending():
+                GLib.main_context_default().iteration(may_block=False)

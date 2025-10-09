@@ -1,10 +1,8 @@
 from __future__ import annotations
 
 import re
-import sys
-import warnings
 from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
-from typing import TYPE_CHECKING, Any, Protocol, Union
+from typing import TYPE_CHECKING, Any, Protocol
 
 import toga
 from toga.handlers import wrapped_handler
@@ -12,12 +10,10 @@ from toga.handlers import wrapped_handler
 from .base import StyleT, Widget
 
 if TYPE_CHECKING:
-    if sys.version_info < (3, 10):
-        from typing_extensions import TypeAlias
-    else:
-        from typing import TypeAlias
+    from typing import TypeAlias
 
-    NumberInputT: TypeAlias = Union[Decimal, int, float, str]
+    NumberInputT: TypeAlias = Decimal | int | float | str
+    """"""  # TODO: Update docstring content.
 
 # Implementation notes
 # ====================
@@ -73,7 +69,7 @@ def _clean_decimal_str(value: str) -> str:
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: NumberInput, **kwargs: Any) -> object:
+    def __call__(self, widget: NumberInput, **kwargs: Any) -> None:
         """A handler to invoke when the value is changed.
 
         :param widget: The NumberInput that was changed.
@@ -92,8 +88,7 @@ class NumberInput(Widget):
         value: NumberInputT | None = None,
         readonly: bool = False,
         on_change: toga.widgets.numberinput.OnChangeHandler | None = None,
-        min_value: None = None,  # DEPRECATED
-        max_value: None = None,  # DEPRECATED
+        **kwargs,
     ):
         """Create a new number input widget.
 
@@ -102,44 +97,16 @@ class NumberInput(Widget):
             applied to the widget.
         :param step: The amount that any increment/decrement operations will apply to
             the widget's current value.
-        :param min: If provided, :any:`value` will be guaranteed to be greater than or
-            equal to this minimum.
-        :param max: If provided, :any:`value` will be guaranteed to be less than or
-            equal to this maximum.
+        :param min: If provided, [`value`][toga.NumberInput.value] will be guaranteed to
+            be greater than or equal to this minimum.
+        :param max: If provided, [`value`][toga.NumberInput.value] will be guaranteed to
+            be less than or equal to this maximum.
         :param value: The initial value for the widget.
         :param readonly: Can the value of the widget be modified by the user?
         :param on_change: A handler that will be invoked when the value of the widget
             changes.
-        :param min_value: **DEPRECATED**; alias of ``min``.
-        :param max_value: **DEPRECATED**; alias of ``max``.
+        :param kwargs: Initial style properties.
         """
-        super().__init__(id=id, style=style)
-
-        ######################################################################
-        # 2023-06: Backwards compatibility
-        ######################################################################
-        if min_value is not None:
-            if min is not None:
-                raise ValueError("Cannot specify both min and min_value")
-            else:
-                warnings.warn(
-                    "NumberInput.min_value has been renamed NumberInput.min",
-                    DeprecationWarning,
-                )
-                min = min_value
-        if max_value is not None:
-            if max is not None:
-                raise ValueError("Cannot specify both max and max_value")
-            else:
-                warnings.warn(
-                    "NumberInput.max_value has been renamed NumberInput.max",
-                    DeprecationWarning,
-                )
-                max = max_value
-        ######################################################################
-        # End backwards compatibility
-        ######################################################################
-
         # The initial setting of min requires calling get_value(),
         # which in turn interrogates min. Prime those values with
         # an empty starting value
@@ -147,6 +114,8 @@ class NumberInput(Widget):
         self._max: Decimal | None = None
 
         self.on_change = None
+
+        super().__init__(id, style, **kwargs)
 
         self.readonly = readonly
         self.step = step
@@ -165,7 +134,7 @@ class NumberInput(Widget):
 
         This only controls manual changes by the user (i.e., typing at the
         keyboard). Programmatic changes are permitted while the widget has
-        ``readonly`` enabled.
+        `readonly` enabled.
         """
         return self._impl.get_readonly()
 
@@ -185,8 +154,8 @@ class NumberInput(Widget):
     def step(self, step: NumberInputT) -> None:
         try:
             self._step = _clean_decimal(step)
-        except (ValueError, TypeError, InvalidOperation):
-            raise ValueError("step must be a number")
+        except (ValueError, TypeError, InvalidOperation) as exc:
+            raise ValueError("step must be a number") from exc
 
         self._impl.set_step(self._step)
 
@@ -198,9 +167,10 @@ class NumberInput(Widget):
     def min(self) -> Decimal | None:
         """The minimum bound for the widget's value.
 
-        Returns :any:`None` if there is no minimum bound.
+        Returns [`None`][] if there is no minimum bound.
 
-        When setting this property, the current :attr:`value` and :attr:`max` will be
+        When setting this property, the current [`value`][toga.NumberInput.value] and
+        [`max`][toga.NumberInput.max] will be
         clipped against the new minimum value.
         """
         return self._min
@@ -213,11 +183,11 @@ class NumberInput(Widget):
             # Clip widget's value to the new minimum
             if self.value is not None and self.value < new_min:
                 self.value = new_min
-        except (TypeError, ValueError, InvalidOperation):
+        except (TypeError, ValueError, InvalidOperation) as exc:
             if new_min is None or new_min == "":
                 new_min = None
             else:
-                raise ValueError("min must be a number or None")
+                raise ValueError("min must be a number or None") from exc
 
         # Clip the max value if it's inconsistent with the new min
         if self.max is not None and new_min is not None and new_min > self.max:
@@ -230,9 +200,10 @@ class NumberInput(Widget):
     def max(self) -> Decimal | None:
         """The maximum bound for the widget's value.
 
-        Returns :any:`None` if there is no maximum bound.
+        Returns [`None`][] if there is no maximum bound.
 
-        When setting this property, the current :attr:`value` and :attr:`min` will be
+        When setting this property, the current [`value`][toga.NumberInput.value] and
+        [`min`][toga.NumberInput.min] will be
         clipped against the new maximum value.
         """
         return self._max
@@ -245,11 +216,11 @@ class NumberInput(Widget):
             # Clip widget's value to the new maximum
             if self.value is not None and self.value > new_max:
                 self.value = new_max
-        except (TypeError, ValueError, InvalidOperation):
+        except (TypeError, ValueError, InvalidOperation) as exc:
             if new_max is None or new_max == "":
                 new_max = None
             else:
-                raise ValueError("max must be a number or None")
+                raise ValueError("max must be a number or None") from exc
 
         # Clip the min value if it's inconsistent with the new max
         if self.min is not None and new_max is not None and new_max < self.min:
@@ -261,7 +232,7 @@ class NumberInput(Widget):
     @property
     def value(self) -> Decimal | None:
         """Current value of the widget, rounded to the same number of decimal
-        places as :any:`step`, or ``None`` if no value has been set.
+        places as [`step`][toga.NumberInput.step], or `None` if no value has been set.
 
         If this property is set to a value outside of the min/max range, it will be
         clipped.
@@ -293,11 +264,11 @@ class NumberInput(Widget):
                 value = self.min
             elif self.max is not None and value > self.max:
                 value = self.max
-        except (TypeError, ValueError, InvalidOperation):
+        except (TypeError, ValueError, InvalidOperation) as exc:
             if value is None or value == "":
                 value = None
             else:
-                raise ValueError("value must be a number or None")
+                raise ValueError("value must be a number or None") from exc
 
         self._impl.set_value(value)
         self.refresh()
@@ -310,41 +281,3 @@ class NumberInput(Widget):
     @on_change.setter
     def on_change(self, handler: toga.widgets.numberinput.OnChangeHandler) -> None:
         self._on_change = wrapped_handler(self, handler)
-
-    ######################################################################
-    # 2023-06: Backwards compatibility
-    ######################################################################
-
-    @property
-    def min_value(self) -> Decimal | None:
-        """**DEPRECATED**; alias of :attr:`min`."""
-        warnings.warn(
-            "NumberInput.min_value has been renamed NumberInput.min",
-            DeprecationWarning,
-        )
-        return self.min
-
-    @min_value.setter
-    def min_value(self, value: NumberInputT | None) -> None:
-        warnings.warn(
-            "NumberInput.min_value has been renamed NumberInput.min",
-            DeprecationWarning,
-        )
-        self.min = value
-
-    @property
-    def max_value(self) -> Decimal | None:
-        """**DEPRECATED**; alias of :attr:`max`."""
-        warnings.warn(
-            "NumberInput.max_value has been renamed NumberInput.max",
-            DeprecationWarning,
-        )
-        return self.max
-
-    @max_value.setter
-    def max_value(self, value: NumberInputT | None) -> None:
-        warnings.warn(
-            "NumberInput.max_value has been renamed NumberInput.max",
-            DeprecationWarning,
-        )
-        self.max = value

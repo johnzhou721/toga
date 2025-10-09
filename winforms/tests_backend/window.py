@@ -1,3 +1,5 @@
+import asyncio
+
 from System import EventArgs
 from System.Windows.Forms import (
     Form,
@@ -25,6 +27,8 @@ class WindowProbe(BaseProbe, DialogsMixin):
     supports_unminimize = True
     supports_minimize = True
     supports_placement = True
+    supports_as_image = True
+    supports_focus = True
 
     def __init__(self, app, window):
         self.app = app
@@ -36,11 +40,29 @@ class WindowProbe(BaseProbe, DialogsMixin):
     async def wait_for_window(
         self,
         message,
-        minimize=False,
-        full_screen=False,
-        state_switch_not_from_normal=False,
+        state=None,
     ):
         await self.redraw(message)
+
+        if state:
+            timeout = 5
+            polling_interval = 0.1
+            exception = None
+            loop = asyncio.get_running_loop()
+            start_time = loop.time()
+            while (loop.time() - start_time) < timeout:
+                try:
+                    assert self.instantaneous_state == state
+                    return
+                except AssertionError as e:
+                    exception = e
+                    await asyncio.sleep(polling_interval)
+                    continue
+                raise exception
+
+    async def cleanup(self):
+        self.window.close()
+        await self.redraw("Closing window")
 
     def close(self):
         self.native.Close()

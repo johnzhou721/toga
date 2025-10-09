@@ -1,6 +1,6 @@
 import pytest
 
-from toga_gtk.libs import Gtk
+from toga_gtk.libs import GTK_VERSION, Gtk
 
 from .base import SimpleProbe
 
@@ -11,6 +11,9 @@ class TableProbe(SimpleProbe):
     supports_keyboard_shortcuts = False
     supports_widgets = False
 
+    if GTK_VERSION >= (4, 0, 0):
+        pytest.skip("GTK4 doesn't support tables yet")
+
     def __init__(self, widget):
         super().__init__(widget)
         self.native_table = widget._impl.native_table
@@ -19,6 +22,10 @@ class TableProbe(SimpleProbe):
     @property
     def background_color(self):
         pytest.skip("Can't set background color on GTK Tables")
+
+    @property
+    def has_focus(self):
+        return self.native_table.has_focus()
 
     @property
     def row_count(self):
@@ -85,5 +92,5 @@ class TableProbe(SimpleProbe):
             self.native_table.get_columns()[0],
         )
 
-    async def acquire_keyboard_focus(self):
+    async def select_first_row_keyboard(self):
         pytest.skip("test not implemented for this platform")

@@ -1,4 +1,6 @@
-from toga_gtk.libs import Gtk
+import pytest
+
+from toga_gtk.libs import GTK_VERSION, Gtk
 
 from .base import SimpleProbe
 from .properties import toga_color
@@ -6,6 +8,9 @@ from .properties import toga_color
 
 class SwitchProbe(SimpleProbe):
     native_class = Gtk.Box
+
+    if GTK_VERSION >= (4, 0, 0):
+        pytest.skip("GTK4 doesn't support switches yet")
 
     def __init__(self, widget):
         super().__init__(widget)
@@ -48,21 +53,21 @@ class SwitchProbe(SimpleProbe):
             f"Label width ({label_width}) not in range "
             f"({min_width - MAX_SWITCH_WIDTH}, {max_width - MAX_SWITCH_WIDTH})"
         )
-        assert (
-            0 <= switch_width <= MAX_SWITCH_WIDTH
-        ), f"Switch width ({switch_width}) not in range (0-60)"
+        assert 0 <= switch_width <= MAX_SWITCH_WIDTH, (
+            f"Switch width ({switch_width}) not in range (0-60)"
+        )
 
     def assert_height(self, min_height, max_height):
         super().assert_height(min_height, max_height)
 
         label_height = self.native_label.get_allocation().height
         switch_height = self.native_switch.get_allocation().height
-        assert (
-            min_height <= label_height <= max_height
-        ), f"Label height ({label_height}) not in range ({min_height}, {max_height})"
-        assert (
-            min_height <= switch_height <= max_height
-        ), f"Switch height ({switch_height}) not in range ({min_height}, {max_height})"
+        assert min_height <= label_height <= max_height, (
+            f"Label height ({label_height}) not in range ({min_height}, {max_height})"
+        )
+        assert min_height <= switch_height <= max_height, (
+            f"Switch height ({switch_height}) not in range ({min_height}, {max_height})"
+        )
 
     async def press(self):
         # This isn't really a "click" - it's just changing the value.

@@ -1,7 +1,8 @@
 import asyncio
 
-import toga
 from textual.app import App as TextualApp
+
+import toga
 
 from .screens import Screen as ScreenImpl
 
@@ -27,7 +28,10 @@ class App:
         self.interface._impl = self
 
         self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
         self.native = TogaApp(self)
+
+        self._current_window = None
 
         # run the app without displaying it
         self.headless = False
@@ -54,7 +58,7 @@ class App:
         self.native.exit()
 
     def main_loop(self):
-        self.loop.run_until_complete(self.native.run_async(headless=self.headless))
+        self.native.run(headless=self.headless, loop=self.loop)
 
     def set_icon(self, icon):
         pass
@@ -110,9 +114,16 @@ class App:
         return self._current_window
 
     def set_current_window(self, window):
+        previous_current_window = self._current_window
         self._current_window = window
         self.native.switch_screen(window.native)
         self.native.title = window.get_title()
+        if previous_current_window != window:
+            if previous_current_window is not None:
+                previous_current_window.interface.on_lose_focus()
+                previous_current_window.interface.on_hide()
+            window.interface.on_gain_focus()
+            window.interface.on_show()
 
     ######################################################################
     # Presentation mode controls

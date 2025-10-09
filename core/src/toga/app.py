@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import asyncio
 import importlib.metadata
+import signal
 import sys
 import warnings
+import webbrowser
 from collections.abc import Coroutine, Iterator
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Protocol
@@ -63,7 +65,7 @@ class OnExitHandler(Protocol):
         :param app: The app instance that is exiting.
         :param kwargs: Ensures compatibility with additional arguments introduced in
             future versions.
-        :returns: ``True`` if the app is allowed to exit; ``False`` if the app is not
+        :returns: `True` if the app is allowed to exit; `False` if the app is not
             allowed to exit.
         """
 
@@ -131,19 +133,21 @@ class WidgetRegistry:
 
 
 class App:
-    #: The currently running :class:`~toga.App`. Since there can only be one running
-    #: Toga app in a process, this is available as a class property via
-    #: ``toga.App.app``. If no app has been created yet, this is set to ``None``.
     app: App | None = None
+    """
+    The currently running [`App`][toga.App]. Since there can only be one running
+    Toga app in a process, this is available as a class property via
+    `toga.App.app`. If no app has been created yet, this is set to `None`.
+    """
     _impl: Any
     _camera: Camera
     _location: Location
     _main_window: Window | str | None
     _running_tasks: set[asyncio.Task] = set()
 
-    #: A constant that can be used as the main window to indicate that an app will
-    #: run in the background without a main window.
     BACKGROUND: str = "background app"
+    """A constant that can be used as the main window to indicate that an app will
+    run in the background without a main window."""
 
     _UNDEFINED: str = "<main window not assigned>"
 
@@ -162,69 +166,44 @@ class App:
         document_types: list[type[Document]] | None = None,
         on_running: OnRunningHandler | None = None,
         on_exit: OnExitHandler | None = None,
-        id: None = None,  # DEPRECATED
-        windows: None = None,  # DEPRECATED
     ):
         """Create a new App instance.
 
         Once the app has been created, you should invoke the
-        :meth:`~toga.App.main_loop()` method, which will start the event loop of your
-        App.
+        [`App.main_loop()`][toga.App.main_loop] method, which will start the event loop
+        of your App.
 
         :param formal_name: The human-readable name of the app. If not provided, the
-            metadata key ``Formal-Name`` must be present.
+            metadata key `Formal-Name` must be present.
         :param app_id: The unique application identifier. This will usually be a
-            reversed domain name, e.g. ``org.beeware.myapp``. If not provided, the
-            metadata key ``App-ID`` must be present.
+            reversed domain name, e.g. `org.beeware.myapp`. If not provided, the
+            metadata key `App-ID` must be present.
         :param app_name: The name of the distribution used to load metadata with
-            :any:`importlib.metadata`. If not provided, the following will be tried in
+            [`importlib.metadata`][]. If not provided, the following will be tried in
             order:
 
-            #. If the ``__main__`` module is contained in a package, that package's name
+            #. If the `__main__` module is contained in a package, that package's name
                will be used.
-            #. If the ``app_id`` argument was provided, its last segment will be used.
-               For example, an ``app_id`` of ``com.example.my-app`` would yield a
-               distribution name of ``my-app``.
-            #. As a last resort, the name ``toga``.
-        :param icon: The :any:`icon <IconContentT>` for the app. Defaults to
-            :attr:`toga.Icon.APP_ICON`.
+            #. If the `app_id` argument was provided, its last segment will be used.
+               For example, an `app_id` of `com.example.my-app` would yield a
+               distribution name of `my-app`.
+            #. As a last resort, the name `toga`.
+        :param icon: The [icon][toga.icons.IconContentT] for the app. Defaults to
+            [`toga.Icon.APP_ICON`][].
         :param author: The person or organization to be credited as the author of the
-            app. If not provided, the metadata key ``Author`` will be used.
+            app. If not provided, the metadata key `Author` will be used.
         :param version: The version number of the app.  If not provided, the metadata
-            key ``Version`` will be used.
+            key `Version` will be used.
         :param home_page: The URL of a web page for the app. Used in auto-generated help
-            menu items. If not provided, the metadata key ``Home-page`` will be used.
+            menu items. If not provided, the metadata key `Home-page` will be used.
         :param description: A brief (one line) description of the app. If not provided,
-            the metadata key ``Summary`` will be used.
+            the metadata key `Summary` will be used.
         :param startup: A callable to run before starting the app.
-        :param on_running: The initial :any:`on_running` handler.
-        :param on_exit: The initial :any:`on_exit` handler.
-        :param document_types: A list of :any:`Document` classes that this app
-            can manage.
-        :param id: **DEPRECATED** - This argument will be ignored. If you need a
-            machine-friendly identifier, use ``app_id``.
-        :param windows: **DEPRECATED** – Windows are now automatically added to the
-            current app. Passing this argument will cause an exception.
+        :param on_running: The initial [`on_running`][toga.App.on_running] handler.
+        :param on_exit: The initial [`on_exit`][toga.App.on_exit] handler.
+        :param document_types: A list of [`Document`][toga.Document] classes that this
+            app can manage.
         """
-        ######################################################################
-        # 2023-10: Backwards compatibility
-        ######################################################################
-        if id is not None:
-            warnings.warn(
-                "App.id is deprecated and will be ignored. Use app_id instead",
-                DeprecationWarning,
-                stacklevel=2,
-            )
-
-        if windows is not None:
-            raise ValueError(
-                "The `windows` constructor argument of toga.App has been removed. "
-                "Windows are now automatically added to the current app."
-            )
-        ######################################################################
-        # End backwards compatibility
-        ######################################################################
-
         # Initialize empty widgets registry
         self._widgets = WidgetRegistry()
 
@@ -237,12 +216,13 @@ class App:
             # `python -m appname`, then __main__.__package__ will be an empty string.
             #
             # If the code is contained in appname.py, and you start the app using
-            # `python appname.py`, then __main__.__package__ will be None.
+            # `python appname.py`, then __main__.__package__ will be None - unless
+            # the app has been run under pdb, in which case `__package__` doesn't exist.
             #
             # If the code is contained in appname/__main__.py, and you start the app
             # using `python -m appname`, then __main__.__package__ will be "appname".
             try:
-                main_module_pkg = sys.modules["__main__"].__package__
+                main_module_pkg = getattr(sys.modules["__main__"], "__package__", None)
                 if main_module_pkg:
                     app_name = main_module_pkg
             except KeyError:
@@ -253,7 +233,7 @@ class App:
         if (app_name is None) and app_id:
             app_name = app_id.split(".")[-1]
 
-        # If we still don't have a distribution name, fall back to ``toga`` as a
+        # If we still don't have a distribution name, fall back to `toga` as a
         # last resort.
         if app_name is None:
             app_name = "toga"
@@ -355,13 +335,13 @@ class App:
     @property
     def app_name(self) -> str:
         """The name of the distribution used to load metadata with
-        :any:`importlib.metadata` (read-only)."""
+        [`importlib.metadata`][] (read-only)."""
         return self._app_name
 
     @property
     def app_id(self) -> str:
         """The unique application identifier (read-only). This will usually be a
-        reversed domain name, e.g. ``org.beeware.myapp``.
+        reversed domain name, e.g. `org.beeware.myapp`.
         """
         return self._app_id
 
@@ -391,7 +371,7 @@ class App:
     def dark_mode(self) -> bool | None:
         """Whether the user has dark mode enabled in their environment (read-only).
 
-        :returns: A Boolean describing if the app is in dark mode; ``None`` if Toga
+        :returns: A Boolean describing if the app is in dark mode; `None` if Toga
             cannot determine if the app is in dark mode.
         """
         return self._impl.get_dark_mode_state()
@@ -400,7 +380,7 @@ class App:
     def icon(self) -> Icon:
         """The Icon for the app.
 
-        Can be specified as any valid :any:`icon content <IconContentT>`.
+        Can be specified as any valid [icon content][toga.icons.IconContentT].
         """
         return self._icon
 
@@ -417,14 +397,6 @@ class App:
             # The first time the icon is set, it is *before* the impl has been created,
             # so that the app instance can be instantiated with the correct icon.
             pass
-
-    @property
-    def id(self) -> str:
-        """**DEPRECATED** – Use :any:`app_id`."""
-        warnings.warn(
-            "App.id is deprecated. Use app_id instead", DeprecationWarning, stacklevel=2
-        )
-        return self._app_id
 
     @property
     def version(self) -> str | None:
@@ -448,9 +420,9 @@ class App:
     def request_exit(self):
         """Request an exit from the application.
 
-        This method will call the :meth:`~toga.App.on_exit` handler to confirm if the
-        app should be allowed to exit; if that handler confirms the action, the app will
-        exit.
+        This method will call the [`App.on_exit()`][toga.App.on_exit] handler to confirm
+        if the app should be allowed to exit; if that handler confirms the action,
+        the app will exit.
         """
 
         def cleanup(app, should_exit):
@@ -464,16 +436,15 @@ class App:
     def exit(self) -> None:
         """Unconditionally exit the application.
 
-        This *does not* invoke the ``on_exit`` handler; the app will be immediately
+        This *does not* invoke the `on_exit` handler; the app will be immediately
         and unconditionally closed.
         """
         self._impl.exit()
 
     @property
     def loop(self) -> asyncio.AbstractEventLoop:
-        """The `event loop
-        <https://docs.python.org/3/library/asyncio-eventloop.html>`__ of the app's main
-        thread (read-only)."""
+        """The [event loop](https://docs.python.org/3/library/asyncio-eventloop.html)
+        of the app's main thread (read-only)."""
         return self._impl.loop
 
     def main_loop(self) -> None:
@@ -483,13 +454,7 @@ class App:
         On mobile and web platforms, it returns immediately.
         """
         # Modify signal handlers to make sure Ctrl-C is caught and handled.
-        try:
-            # This module doesn't exist in MicroPython, so don't import it globally.
-            import signal
-        except ModuleNotFoundError:  # pragma: no cover
-            pass
-        else:
-            signal.signal(signal.SIGINT, signal.SIG_DFL)
+        signal.signal(signal.SIGINT, signal.SIG_DFL)
 
         self._impl.main_loop()
 
@@ -504,17 +469,11 @@ class App:
         """
         platform_task_factory = self.loop.get_task_factory()
 
-        def factory(loop, coro, context=None):
+        def factory(loop, coro, **kwargs):
             if platform_task_factory is not None:
-                if sys.version_info < (3, 11):  # pragma: no-cover-if-gte-py311
-                    task = platform_task_factory(loop, coro)
-                else:  # pragma: no-cover-if-lt-py311
-                    task = platform_task_factory(loop, coro, context=context)
+                task = platform_task_factory(loop, coro, **kwargs)
             else:
-                if sys.version_info < (3, 11):  # pragma: no-cover-if-gte-py311
-                    task = asyncio.Task(coro, loop=loop)
-                else:  # pragma: no-cover-if-lt-py311
-                    task = asyncio.Task(coro, loop=loop, context=context)
+                task = asyncio.Task(coro, loop=loop, **kwargs)
 
             self._running_tasks.add(task)
             task.add_done_callback(self._running_tasks.discard)
@@ -526,7 +485,7 @@ class App:
     def main_window(self) -> Window | str | None:
         """The main window for the app.
 
-        See :ref:`the documentation on assigning a main window <assigning-main-window>`
+        See [the documentation on assigning a main window][assigning-main-window]
         for values that can be used for this attribute.
         """
         if self._main_window is App._UNDEFINED:
@@ -561,7 +520,7 @@ class App:
         line arguments can share the same error handling.
 
         :param filename: The filename passed as an argument, as a string.
-        :returns: ``True`` if a document was successfully loaded; ``False`` otherwise.
+        :returns: `True` if a document was successfully loaded; `False` otherwise.
         """
         try:
             self.documents.open(filename)
@@ -643,7 +602,7 @@ class App:
                     # Pass in the first document type as the default
                     self.documents.new(self.documents.types[0])
                 else:
-                    self.loop.run_until_complete(self.documents.request_open())
+                    self.loop.create_task(self.documents.request_open())
             else:
                 # No document types defined.
                 raise RuntimeError(
@@ -700,13 +659,21 @@ class App:
         """Create and show the main window for the application.
 
         Subclasses can override this method to define customized startup behavior;
-        however, any override *must* ensure the :any:`main_window` has been assigned
-        before it returns.
+        however, any override *must* ensure the
+        [`main_window`][toga.App.main_window] has
+        been assigned before it returns.
         """
         self.main_window = MainWindow(title=self.formal_name, id="main")
 
         if self._startup_method:
-            self.main_window.content = self._startup_method(self)
+            content = self._startup_method(self)
+            if content is None:
+                raise ValueError(
+                    "Your app's startup method has not provided any content for your "
+                    "app's main window. Did you remember to return the main content "
+                    "container in your startup method?"
+                )
+            self.main_window.content = content
 
         self.main_window.show()
 
@@ -777,7 +744,7 @@ class App:
         """The widgets managed by the app, over all windows.
 
         Can be used to look up widgets by ID over the entire app (e.g.,
-        ``app.widgets["my_id"]``).
+        `app.widgets["my_id"]`).
 
         Only returns widgets that are currently part of a layout. A widget that has been
         created, but not assigned as part of window content will not be returned by
@@ -810,22 +777,21 @@ class App:
     async def dialog(self, dialog: Dialog) -> Coroutine[None, None, Any]:
         """Display a dialog to the user in the app context.
 
-        :param: The :doc:`dialog <resources/dialogs>` to display to the user.
+        :param dialog: The [dialog](/reference/api/resources/dialogs.md) to
+            display to the user.
         :returns: The result of the dialog.
         """
         return await dialog._show(None)
 
     def visit_homepage(self) -> None:
-        """Open the application's :any:`home_page` in the default browser.
+        """Open the application's [`home_page`][toga.App.home_page] in the default
+        browser.
 
         This method is invoked as a handler by the "Visit homepage" default menu item.
-        If the :any:`home_page` is ``None``, this is a no-op, and the default menu item
-        will be disabled.
+        If the [`home_page`][toga.App.home_page] is `None`, this is a no-op, and the
+        default menu item will be disabled.
         """
         if self.home_page is not None:
-            # This module doesn't exist in MicroPython, so don't import it globally.
-            import webbrowser
-
             webbrowser.open(self.home_page)
 
     ######################################################################
@@ -887,7 +853,7 @@ class App:
             not have content.
         """
         if windows:
-            screen_window_dict = dict()
+            screen_window_dict = {}
             if isinstance(windows, list):
                 for window, screen in zip(windows, self.screens):
                     screen_window_dict[screen] = window
@@ -920,9 +886,9 @@ class App:
         The return value of this method controls whether the app is allowed to exit.
         This can be used to prevent the app exiting with unsaved changes, etc.
 
-        If necessary, the overridden method can be defined as an ``async`` coroutine.
+        If necessary, the overridden method can be defined as an `async` coroutine.
 
-        :returns: ``True`` if the app is allowed to exit; ``False`` if the app is not
+        :returns: `True` if the app is allowed to exit; `False` if the app is not
             allowed to exit.
         """
         # Always allow exit
@@ -932,39 +898,21 @@ class App:
         """The event handler that will be invoked
         when the app's event loop starts running.
 
-        If necessary, the overridden method can be defined as an ``async`` coroutine.
+        If necessary, the overridden method can be defined as an `async` coroutine.
         """
 
     ######################################################################
-    # 2023-10: Backwards compatibility
-    ######################################################################
-
-    @property
-    def name(self) -> str:
-        """**DEPRECATED** – Use :any:`formal_name`."""
-        warnings.warn(
-            "App.name is deprecated. Use formal_name instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._formal_name
-
-    # Support WindowSet __iadd__ and __isub__
-    @windows.setter
-    def windows(self, windows: WindowSet) -> None:
-        if windows is not self._windows:
-            raise AttributeError("can't set attribute 'windows'")
-
-    ######################################################################
-    # 2024-06: Backwards compatibility
+    # 2024-06: Backwards compatibility for <= 0.4.5
     ######################################################################
 
     def add_background_task(self, handler: BackgroundTask) -> None:
-        """**DEPRECATED** – Use :any:`asyncio.create_task`, or override/assign
-        :meth:`~toga.App.on_running`."""
+        """**DEPRECATED** – Use [`asyncio.create_task`][], or override/assign
+        [`App.on_running()`][toga.App.on_running]."""
         warnings.warn(
-            "App.add_background_task is deprecated. Use asyncio.create_task(), "
-            "or set an App.on_running() handler",
+            (
+                "App.add_background_task is deprecated. Use asyncio.create_task(), "
+                "or set an App.on_running() handler"
+            ),
             DeprecationWarning,
             stacklevel=2,
         )
@@ -972,11 +920,12 @@ class App:
         self.loop.call_soon_threadsafe(wrapped_handler(self, handler))
 
     ######################################################################
-    # 2024-07: Backwards compatibility
+    # 2024-12: Backwards compatibility for < 0.5.0
     ######################################################################
 
     def exit_full_screen(self) -> None:
-        """**DEPRECATED** – Use :any:`App.exit_presentation_mode()`."""
+        """**DEPRECATED** – Use
+        [`App.exit_presentation_mode()`][toga.App.exit_presentation_mode]."""
         warnings.warn(
             (
                 "`App.exit_full_screen()` is deprecated. "
@@ -990,7 +939,8 @@ class App:
 
     @property
     def is_full_screen(self) -> bool:
-        """**DEPRECATED** – Use :any:`App.in_presentation_mode`."""
+        """**DEPRECATED** – Use
+        [`App.in_presentation_mode`][toga.App.in_presentation_mode]."""
         warnings.warn(
             (
                 "`App.is_full_screen` is deprecated. "
@@ -1002,8 +952,9 @@ class App:
         return self.in_presentation_mode
 
     def set_full_screen(self, *windows: Window) -> None:
-        """**DEPRECATED** – Use :any:`App.enter_presentation_mode()` and
-        :any:`App.exit_presentation_mode()`."""
+        """**DEPRECATED** – Use
+        [`App.enter_presentation_mode()`][toga.App.enter_presentation_mode] and
+        [`App.exit_presentation_mode()`][toga.App.exit_presentation_mode]."""
         warnings.warn(
             (
                 "`App.set_full_screen()` is deprecated. "
@@ -1022,14 +973,14 @@ class App:
 
 
 ######################################################################
-# 2024-08: Backwards compatibility
+# 2024-08: Backwards compatibility for <= 0.4.5
 ######################################################################
 
 
 class DocumentApp(App):
     def __init__(self, *args, **kwargs):
-        """**DEPRECATED** - :any:`toga.DocumentApp` can be replaced with
-        :any:`toga.App`.
+        """**DEPRECATED** - [`toga.DocumentApp`][] can be replaced with
+        [`toga.App`][].
         """
         warnings.warn(
             "toga.DocumentApp is no longer required. Use toga.App instead",
@@ -1044,7 +995,7 @@ class DocumentApp(App):
 
     @property
     def document_types(self) -> dict[str, type[Document]]:
-        """**DEPRECATED** - Use ``documents.types``; extensions can be
+        """**DEPRECATED** - Use `documents.types`; extensions can be
         obtained from the individual document classes itself.
         """
         warnings.warn(

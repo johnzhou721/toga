@@ -1,10 +1,9 @@
 import pytest
 from pytest import approx
 from System import EventArgs, Object
-from System.Drawing import Color, SystemColors
+from System.Drawing import SystemColors
 from System.Windows.Forms import MouseButtons, MouseEventArgs
 
-from toga.colors import TRANSPARENT
 from toga.style.pack import JUSTIFY, LEFT
 
 from ..probe import BaseProbe
@@ -52,10 +51,16 @@ class SimpleProbe(BaseProbe):
 
     @property
     def background_color(self):
-        if self.native.BackColor == Color.Transparent:
-            return TRANSPARENT
-        else:
-            return toga_color(self.native.BackColor)
+        return (
+            toga_color(self.native.BackColor),
+            toga_color(self.widget.parent._impl.native.BackColor),
+            (
+                # self.impl.interface.style.background_color can be None or TRANSPARENT
+                # and so there will be no alpha value on them. In such cases return 0
+                # as the original alpha value.
+                getattr(self.widget.style.background_color, "a", 0)
+            ),
+        )
 
     @property
     def hidden(self):
@@ -78,7 +83,7 @@ class SimpleProbe(BaseProbe):
         self.native.OnClick(EventArgs.Empty)
 
     def mouse_event(self, x=0, y=0, **kwargs):
-        kwargs = {**dict(button=MouseButtons.Left, clicks=1, delta=0), **kwargs}
+        kwargs = {"button": MouseButtons.Left, "clicks": 1, "delta": 0, **kwargs}
         return MouseEventArgs(
             x=round(x * self.scale_factor), y=round(y * self.scale_factor), **kwargs
         )

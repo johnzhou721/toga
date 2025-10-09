@@ -17,7 +17,7 @@ class MyApp(toga.App):
 
 
 @pytest.fixture
-def app():
+async def app():
     return MyApp("Icons Test", "org.beeware.toga.icons")
 
 
@@ -255,13 +255,3 @@ def test_cached_icons(app, name, path):
 
     # Retrieve the icon a second time; The same instance is returned.
     assert id(getattr(toga.Icon, name)) == id(icon)
-
-
-def test_deprecated_icons(app):
-    """Deprecated icons are still available."""
-    with pytest.warns(DeprecationWarning):
-        icon = toga.Icon.TOGA_ICON
-    assert icon.path == Path("toga")
-
-    # Retrieve the icon a second time; The same instance is returned.
-    assert id(toga.Icon.TOGA_ICON) == id(icon)

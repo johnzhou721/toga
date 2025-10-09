@@ -8,7 +8,7 @@ import pytest
 import toga
 from toga.style import Pack
 
-from .conftest import build_cleanup_test
+from .conftest import build_cleanup_test, safe_create
 from .properties import (  # noqa: F401
     test_flex_widget_size,
 )
@@ -32,7 +32,8 @@ async def on_select():
 
 @pytest.fixture
 async def widget(on_select):
-    widget = toga.MapView(style=Pack(flex=1), on_select=on_select)
+    with safe_create():
+        widget = toga.MapView(style=Pack(flex=1), on_select=on_select)
 
     # Some implementations of MapView are a WebView wearing a trenchcoat.
     # Ensure that the webview is fully configured before proceeding.
@@ -119,9 +120,9 @@ async def test_zoom(widget, probe):
 
         # Get the longitude span associated with a 256px tile.
         tile_span = await probe.tile_longitude_span()
-        assert (
-            min_span < tile_span < max_span
-        ), f"Zoom level {zoom}: failed {min_span} < {tile_span} < {max_span}"
+        assert min_span < tile_span < max_span, (
+            f"Zoom level {zoom}: failed {min_span} < {tile_span} < {max_span}"
+        )
 
         assert widget.zoom == zoom
 

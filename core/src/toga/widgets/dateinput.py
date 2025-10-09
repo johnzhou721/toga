@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import datetime
-import warnings
 from typing import Any, Protocol
 
 import toga
@@ -18,7 +17,7 @@ MAX_DATE = datetime.date(8999, 12, 31)
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: DateInput, **kwargs: Any) -> object:
+    def __call__(self, widget: DateInput, **kwargs: Any) -> None:
         """A handler that will be invoked when a change occurs.
 
         :param widget: The DateInput that was changed.
@@ -37,6 +36,7 @@ class DateInput(Widget):
         min: datetime.date | None = None,
         max: datetime.date | None = None,
         on_change: toga.widgets.dateinput.OnChangeHandler | None = None,
+        **kwargs,
     ):
         """Create a new DateInput widget.
 
@@ -48,8 +48,9 @@ class DateInput(Widget):
         :param min: The earliest date (inclusive) that can be selected.
         :param max: The latest date (inclusive) that can be selected.
         :param on_change: A handler that will be invoked when the value changes.
+        :param kwargs: Initial style properties.
         """
-        super().__init__(id=id, style=style)
+        super().__init__(id, style, **kwargs)
 
         self.on_change = None
         self.min = min
@@ -63,10 +64,10 @@ class DateInput(Widget):
 
     @property
     def value(self) -> datetime.date:
-        """The currently selected date. A value of ``None`` will be converted into
+        """The currently selected date. A value of `None` will be converted into
         today's date.
 
-        If this property is set to a value outside of the min/max range, it will be
+        If this property is set to a value outside the min/max range, it will be
         clipped.
         """
         return self._impl.get_value()
@@ -106,13 +107,14 @@ class DateInput(Widget):
 
     @property
     def min(self) -> datetime.date:
-        """The minimum allowable date (inclusive). A value of ``None`` will be converted
+        """The minimum allowable date (inclusive). A value of `None` will be converted
         into the lowest supported date of 1800-01-01.
 
-        When setting this property, the current :attr:`value` and :attr:`max` will be
+        When setting this property, the current [`value`][toga.DateInput.value] and
+        [`max`][toga.DateInput.max] will be
         clipped against the new minimum value.
 
-        :raises ValueError: If set to a date outside of the supported range.
+        :raises ValueError: If set to a date outside the supported range.
         """
         return self._impl.get_min_date()
 
@@ -131,13 +133,14 @@ class DateInput(Widget):
 
     @property
     def max(self) -> datetime.date:
-        """The maximum allowable date (inclusive). A value of ``None`` will be converted
+        """The maximum allowable date (inclusive). A value of `None` will be converted
         into the highest supported date of 8999-12-31.
 
-        When setting this property, the current :attr:`value` and :attr:`min` will be
+        When setting this property, the current [`value`][toga.DateInput.value] and
+        [`min`][toga.DateInput.min] will be
         clipped against the new maximum value.
 
-        :raises ValueError: If set to a date outside of the supported range.
+        :raises ValueError: If set to a date outside the supported range.
         """
         return self._impl.get_max_date()
 
@@ -162,54 +165,3 @@ class DateInput(Widget):
     @on_change.setter
     def on_change(self, handler: toga.widgets.dateinput.OnChangeHandler) -> None:
         self._on_change = wrapped_handler(self, handler)
-
-
-# 2023-05: Backwards compatibility
-class DatePicker(DateInput):
-    def __init__(self, *args: Any, **kwargs: Any):
-        warnings.warn("DatePicker has been renamed DateInput.", DeprecationWarning)
-
-        for old_name, new_name in [
-            ("min_date", "min"),
-            ("max_date", "max"),
-        ]:
-            try:
-                value = kwargs.pop(old_name)
-                warnings.warn(
-                    f"DatePicker.{old_name} has been renamed DateInput.{new_name}",
-                    DeprecationWarning,
-                )
-            except KeyError:
-                pass
-            else:
-                kwargs[new_name] = value
-
-        super().__init__(*args, **kwargs)
-
-    @property
-    def min_date(self) -> datetime.date:
-        warnings.warn(
-            "DatePicker.min_date has been renamed DateInput.min", DeprecationWarning
-        )
-        return self.min
-
-    @min_date.setter
-    def min_date(self, value: object) -> None:
-        warnings.warn(
-            "DatePicker.min_date has been renamed DateInput.min", DeprecationWarning
-        )
-        self.min = value
-
-    @property
-    def max_date(self) -> datetime.date:
-        warnings.warn(
-            "DatePicker.max_date has been renamed DateInput.max", DeprecationWarning
-        )
-        return self.max
-
-    @max_date.setter
-    def max_date(self, value: object) -> None:
-        warnings.warn(
-            "DatePicker.max_date has been renamed DateInput.max", DeprecationWarning
-        )
-        self.max = value

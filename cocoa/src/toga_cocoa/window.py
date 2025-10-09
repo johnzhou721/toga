@@ -69,7 +69,16 @@ class TogaWindow(NSWindow):
             self.interface.content.refresh()
 
     @objc_method
+    def windowDidBecomeMain_(self, notification):
+        self.interface.on_gain_focus()
+
+    @objc_method
+    def windowDidResignMain_(self, notification):
+        self.interface.on_lose_focus()
+
+    @objc_method
     def windowDidMiniaturize_(self, notification) -> None:
+        self.interface.on_hide()
         if (
             self.impl._pending_state_transition
             and self.impl._pending_state_transition != WindowState.MINIMIZED
@@ -80,6 +89,7 @@ class TogaWindow(NSWindow):
 
     @objc_method
     def windowDidDeminiaturize_(self, notification) -> None:
+        self.interface.on_show()
         self.impl._apply_state(self.impl._pending_state_transition)
 
     @objc_method
@@ -129,9 +139,12 @@ class TogaWindow(NSWindow):
         for item in self.interface.toolbar:
             # If there's been a group change, and this item isn't a separator,
             # add a separator between groups.
-            if prev_group is not None:
-                if item.group != prev_group and not isinstance(item, Separator):
-                    default.addObject_(toolbar_identifier(prev_group))
+            if (
+                prev_group is not None
+                and item.group != prev_group
+                and not isinstance(item, Separator)
+            ):
+                default.addObject_(toolbar_identifier(prev_group))
             default.addObject_(toolbar_identifier(item))
             prev_group = item.group
 
@@ -162,10 +175,6 @@ class TogaWindow(NSWindow):
         except KeyError:  # Separator items
             pass
 
-        # Prevent the toolbar item from being deallocated when
-        # no Python references remain
-        native.retain()
-        native.autorelease()
         return native
 
     @objc_method
@@ -219,9 +228,9 @@ class Window:
 
         # Cocoa releases windows when they are closed; this causes havoc with
         # Toga's widget cleanup because the ObjC runtime thinks there's no
-        # references to the object left. Add a reference that can be released
-        # in response to the close.
-        self.native.retain()
+        # references to the object left. Explicitly prevent this and let Rubicon
+        # manage the release when no Python references are left.
+        self.native.releasedWhenClosed = False
 
         # Pending Window state transition variable:
         self._pending_state_transition = None
@@ -239,9 +248,6 @@ class Window:
         # window.
         self.native.wantsLayer = True
         self.container.native.backgroundColor = self.native.backgroundColor
-
-    def __del__(self):
-        self.native.release()
 
     ######################################################################
     # Window properties
@@ -265,6 +271,10 @@ class Window:
 
     def show(self):
         self.native.makeKeyAndOrderFront(None)
+        # Cocoa doesn't provide a native window delegate notification that would
+        # be triggered when makeKeyAndOrderFront_ is called. So, trigger the event
+        # here instead.
+        self.interface.on_show()
 
     ######################################################################
     # Window content and resources
@@ -319,9 +329,11 @@ class Window:
         # macOS origin is bottom left of screen, and the screen might be
         # offset relative to other screens. Adjust for this.
         return Position(
-            window_frame.origin.x,
-            primary_screen.size.height
-            - (window_frame.origin.y + window_frame.size.height),
+            int(window_frame.origin.x),
+            int(
+                primary_screen.size.height
+                - (window_frame.origin.y + window_frame.size.height)
+            ),
         )
 
     def set_position(self, position):
@@ -341,11 +353,18 @@ class Window:
 
     def hide(self):
         self.native.orderOut(self.native)
+        # Cocoa doesn't provide a native window delegate notification that would
+        # be triggered when orderOut_ is called. So, trigger the event here instead.
+        self.interface.on_hide()
 
     def get_visible(self):
-        return (
-            bool(self.native.isVisible)
-            or self.get_window_state(in_progress_state=True) == WindowState.MINIMIZED
+        # macOS reports minimized windows as non-visible, but Toga considers minimized
+        # windows to be visible, so we need to override in that case. However,
+        # minimization state is retained when the app as a whole is hidden; so we also
+        # need to check for app-level hiding when overriding.
+        return bool(self.native.isVisible) or (
+            self.get_window_state(in_progress_state=True) == WindowState.MINIMIZED
+            and not bool(self.interface.app._impl.native.isHidden())
         )
 
     ######################################################################
@@ -511,7 +530,6 @@ class MainWindow(Window):
 
     def __del__(self):
         self.purge_toolbar()
-        super().__del__()
 
     def create_menus(self):
         # macOS doesn't have window-level menus
@@ -528,7 +546,7 @@ class MainWindow(Window):
                     self._toolbar_items[toolbar_identifier(cmd)] = cmd
 
             self.native_toolbar = NSToolbar.alloc().initWithIdentifier(
-                "Toolbar-%s" % id(self)
+                f"Toolbar-{id(self)}"
             )
             self.native_toolbar.setDelegate(self.native)
         else:
@@ -558,4 +576,3 @@ class MainWindow(Window):
 
             for item_native in dead_items:
                 cmd._impl.native.remove(item_native)
-                item_native.release()

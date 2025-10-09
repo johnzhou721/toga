@@ -1,18 +1,21 @@
 [build-system]
 requires = [
-    "setuptools==75.6.0",
-    "setuptools_scm==8.1.0",
-    "setuptools_dynamic_dependencies @ git+https://github.com/beeware/setuptools_dynamic_dependencies",
+    "setuptools==80.9.0",
+    "setuptools_scm==9.2.0",
+    "setuptools_dynamic_dependencies==1.0.0",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
-dynamic = ["version"]
+dynamic = ["version", "dependencies"]
 name = "toga-core"
 description = "A Python native, OS native GUI toolkit."
 readme = "README.rst"
-requires-python = ">= 3.9"
-license.text = "New BSD"
+requires-python = ">= 3.10"
+license = "BSD-3-Clause"
+license-files = [
+    "LICENSE"
+]
 authors = [
     {name="Russell Keith-Magee", email="russell@keith-magee.com"},
 ]
@@ -42,10 +45,8 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -55,39 +56,19 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
     "Topic :: Software Development :: Widget Sets",
 ]
-dependencies = [
-    "travertino >= 0.3.0, < 0.4.0",
-]
 
-[project.optional-dependencies]
+[dependency-groups]
 # Extras used by developers *of* Toga are pinned to specific versions to
 # ensure environment consistency.
 dev = [
-    "coverage[toml] == 7.6.9",
+    "coverage[toml] == 7.10.7",
     "coverage-conditional-plugin == 0.9.0",
-    "Pillow == 11.0.0",
-    "pre-commit == 4.0.1",
-    "pytest == 8.3.4",
-    "pytest-asyncio == 0.25.0",
+    "Pillow == 11.3.0",
+    "pytest == 8.4.2",
+    "pytest-asyncio == 1.2.0",
     "pytest-freezer == 0.4.9",
-    "setuptools-scm == 8.1.0",
-    "tox == 4.23.2",
-    # typing-extensions needed for TypeAlias added in Py 3.10
-    "typing-extensions == 4.12.2 ; python_version < '3.10'",
-]
-# Docs are always built on a specific Python version; see RTD and tox config files,
-# and the docs contribution guide.
-docs = [
-    "furo == 2024.8.6",
-    "Pillow == 11.0.0",
-    "pyenchant == 3.2.2",
-    "sphinx == 8.1.3",
-    "sphinx_tabs == 3.4.5",
-    "sphinx-autobuild == 2024.10.3",
-    "sphinx-csv-filter == 0.4.2",
-    "sphinx-copybutton == 0.5.2",
-    "sphinx-toolbox == 3.8.1",
-    "sphinxcontrib-spelling == 8.0.0",
+    "pytest-xdist == 3.8.0",
+    "setuptools-scm==9.2.0",
 ]
 
 [project.urls]
@@ -104,6 +85,11 @@ pil = "toga.plugins.image_formats.PILConverter"
 [tool.setuptools_scm]
 root = ".."
 
+[tool.setuptools_dynamic_dependencies]
+dependencies = [
+    "travertino == {version}",
+]
+
 [tool.coverage.run]
 parallel = true
 branch = true
@@ -112,7 +98,6 @@ relative_files = true
 # See notes in the root pyproject.toml file.
 source = ["src"]
 source_pkgs = ["toga"]
-omit = ["**/toga/compat/**"]  # Only used by MicroPython.
 
 [tool.coverage.paths]
 source = [

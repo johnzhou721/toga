@@ -4,6 +4,7 @@ import warnings
 from android.content import Context
 from android.graphics.drawable import BitmapDrawable
 from android.media import RingtoneManager
+from android.os import Build
 from android.view import Menu, MenuItem
 from androidx.core.content import ContextCompat
 from java import dynamic_proxy
@@ -35,21 +36,39 @@ class TogaApp(dynamic_proxy(IPythonApp)):
 
     def onStart(self):
         print("Toga app: onStart")
+        self._impl.interface.current_window.on_show()
 
-    def onResume(self):
+    def onResume(self):  # pragma: no cover
         print("Toga app: onResume")
+        # onTopResumedActivityChanged is not available on android versions less than Q
+        # (API level 29). onResume is the best indicator for the gain input focus event.
+        # https://developer.android.com/reference/android/app/Activity#onWindowFocusChanged(boolean):~:text=If%20the%20intent,the%20best%20indicator.
+        if Build.VERSION.SDK_INT < 29:
+            self._impl.interface.current_window.on_gain_focus()
 
-    def onPause(self):
-        print("Toga app: onPause")  # pragma: no cover
+    def onPause(self):  # pragma: no cover
+        print("Toga app: onPause")
+        # onTopResumedActivityChanged is not available on android versions less than Q
+        # (API level 29). onPause is the best indicator for the lost input focus event.
+        if Build.VERSION.SDK_INT < 29:
+            self._impl.interface.current_window.on_lose_focus()
 
-    def onStop(self):
-        print("Toga app: onStop")  # pragma: no cover
+    def onStop(self):  # pragma: no cover
+        print("Toga app: onStop")
+        self._impl.interface.current_window.on_hide()
 
     def onDestroy(self):
         print("Toga app: onDestroy")  # pragma: no cover
 
     def onRestart(self):
         print("Toga app: onRestart")  # pragma: no cover
+
+    def onTopResumedActivityChanged(self, isTopResumedActivity):  # pragma: no cover
+        print("Toga app: onTopResumedActivityChanged")
+        if isTopResumedActivity:
+            self._impl.interface.current_window.on_gain_focus()
+        else:
+            self._impl.interface.current_window.on_lose_focus()
 
     def onActivityResult(self, requestCode, resultCode, resultData):
         print(f"Toga app: onActivityResult {requestCode=} {resultCode=} {resultData=}")
@@ -264,8 +283,12 @@ class App:
     ######################################################################
 
     def get_dark_mode_state(self):
-        self.interface.factory.not_implemented("dark mode state")
-        return None
+        # https://developer.android.com/reference/android/content/res/Configuration#UI_MODE_NIGHT_MASK
+        config = self.native.getResources().getConfiguration()
+        in_dark_mode = (
+            config.uiMode & config.UI_MODE_NIGHT_MASK == config.UI_MODE_NIGHT_YES
+        )
+        return in_dark_mode
 
     ######################################################################
     # App capabilities
@@ -327,10 +350,15 @@ class App:
     # Platform-specific APIs
     ######################################################################
 
+    ######################################################################
+    # 2024-2: Backwards compatibility for < 0.4.1
+    ######################################################################
+
     async def intent_result(self, intent):  # pragma: no cover
         warnings.warn(
             "intent_result has been deprecated; use start_activity",
             DeprecationWarning,
+            stacklevel=2,
         )
         try:
             result_future = asyncio.Future()
@@ -342,8 +370,14 @@ class App:
 
             await result_future
             return result_future.result()
-        except AttributeError:
-            raise RuntimeError("No appropriate Activity found to handle this intent.")
+        except AttributeError as exc:
+            raise RuntimeError(
+                "No appropriate Activity found to handle this intent."
+            ) from exc
+
+    ######################################################################
+    # End backwards compatibility
+    ######################################################################
 
     def _native_startActivityForResult(
         self, activity, code, *options

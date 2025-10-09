@@ -19,6 +19,7 @@ class AppProbe(BaseProbe, DialogsMixin):
     supports_key = True
     supports_key_mod3 = False
     supports_current_window_assignment = True
+    supports_dark_mode = False
 
     def __init__(self, app):
         super().__init__()
@@ -29,14 +30,7 @@ class AppProbe(BaseProbe, DialogsMixin):
 
     @property
     def config_path(self):
-        return (
-            Path.home()
-            / "AppData"
-            / "Local"
-            / "Tiberius Yak"
-            / "Toga Testbed"
-            / "Config"
-        )
+        return Path.home() / "AppData/Local/Tiberius Yak/Toga Testbed/Config"
 
     @property
     def data_path(self):
@@ -44,14 +38,7 @@ class AppProbe(BaseProbe, DialogsMixin):
 
     @property
     def cache_path(self):
-        return (
-            Path.home()
-            / "AppData"
-            / "Local"
-            / "Tiberius Yak"
-            / "Toga Testbed"
-            / "Cache"
-        )
+        return Path.home() / "AppData/Local/Tiberius Yak/Toga Testbed/Cache"
 
     @property
     def logs_path(self):
@@ -95,10 +82,19 @@ class AppProbe(BaseProbe, DialogsMixin):
         if not GetCursorInfo(ctypes.byref(info)):
             raise RuntimeError("GetCursorInfo failed")
 
-        # `flags` is 0 or 1 in local testing, but the GitHub Actions runner always
-        # returns 2 ("the system is not drawing the cursor because the user is providing
-        # input through touch or pen instead of the mouse"). hCursor is more reliable.
-        return info.hCursor is not None
+        # Visibility *should* be exposed by CursorInfo.flags; but in CI,
+        # CursorInfo.flags returns 2 ("the system is not drawing the cursor
+        # because the user is providing input through touch or pen instead of
+        # the mouse"). In that case, we have to fall back to the backend's
+        # boolean representation, because there doesn't appear to be any
+        # more reliable mechanism for determining cursor state.
+        if info.flags == 2:
+            return self.app._impl._cursor_visible
+        else:
+            return info.flags == 1
+
+    def unhide(self):
+        pytest.xfail("This platform doesn't have an app level unhide.")
 
     def assert_app_icon(self, icon):
         for window in self.app.windows:
@@ -129,7 +125,7 @@ class AppProbe(BaseProbe, DialogsMixin):
                 child_index = child_labels.index(label)
             except ValueError:
                 raise AssertionError(
-                    f"no item named {path[:i+1]}; options are {child_labels}"
+                    f"no item named {path[: i + 1]}; options are {child_labels}"
                 ) from None
             item = children[child_index]
 
@@ -137,6 +133,9 @@ class AppProbe(BaseProbe, DialogsMixin):
 
     def _activate_menu_item(self, path):
         self._menu_item(path).OnClick(EventArgs.Empty)
+
+    def activate_menu_hide(self):
+        pytest.xfail("This platform doesn't present a app level hide option in menu.")
 
     def activate_menu_exit(self):
         self._activate_menu_item(["File", "Exit"])
@@ -157,9 +156,9 @@ class AppProbe(BaseProbe, DialogsMixin):
         expected_dialog_handle = ctypes.windll.user32.FindWindowW(
             "#32770", dialog._impl.title
         )
-        assert (
-            expected_dialog_handle == active_window_handle
-        ), "The dialog is not in focus"
+        assert expected_dialog_handle == active_window_handle, (
+            "The dialog is not in focus"
+        )
 
     def assert_menu_item(self, path, *, enabled=True):
         item = self._menu_item(path)

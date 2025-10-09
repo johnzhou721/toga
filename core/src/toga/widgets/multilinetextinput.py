@@ -9,7 +9,7 @@ from .base import StyleT, Widget
 
 
 class OnChangeHandler(Protocol):
-    def __call__(self, widget: MultilineTextInput, **kwargs: Any) -> object:
+    def __call__(self, widget: MultilineTextInput, **kwargs: Any) -> None:
         """A handler to invoke when the value is changed.
 
         :param widget: The MultilineTextInput that was changed.
@@ -26,6 +26,7 @@ class MultilineTextInput(Widget):
         readonly: bool = False,
         placeholder: str | None = None,
         on_change: toga.widgets.multilinetextinput.OnChangeHandler | None = None,
+        **kwargs,
     ):
         """Create a new multi-line text input widget.
 
@@ -38,8 +39,9 @@ class MultilineTextInput(Widget):
             there is no user content to display.
         :param on_change: A handler that will be invoked when the value of
             the widget changes.
+        :param kwargs: Initial style properties.
         """
-        super().__init__(id=id, style=style)
+        super().__init__(id, style, **kwargs)
 
         # Set a dummy handler before installing the actual on_change, because we do not
         # want on_change triggered by the initial value being set
@@ -58,8 +60,8 @@ class MultilineTextInput(Widget):
     def placeholder(self) -> str:
         """The placeholder text for the widget.
 
-        A value of ``None`` will be interpreted and returned as an empty string.
-        Any other object will be converted to a string using ``str()``.
+        A value of `None` will be interpreted and returned as an empty string.
+        Any other object will be converted to a string using `str()`.
         """
         return self._impl.get_placeholder()
 
@@ -74,7 +76,7 @@ class MultilineTextInput(Widget):
 
         This only controls manual changes by the user (i.e., typing at the
         keyboard). Programmatic changes are permitted while the widget has
-        ``readonly`` enabled.
+        `readonly` enabled.
         """
         return self._impl.get_readonly()
 
@@ -86,8 +88,8 @@ class MultilineTextInput(Widget):
     def value(self) -> str:
         """The text to display in the widget.
 
-        A value of ``None`` will be interpreted and returned as an empty string.
-        Any other object will be converted to a string using ``str()``.
+        A value of `None` will be interpreted and returned as an empty string.
+        Any other object will be converted to a string using `str()`.
         """
         return self._impl.get_value()
 

@@ -101,10 +101,6 @@ class TogaTree(NSOutlineView):
             tcv = TogaIconView.alloc().init()
             tcv.identifier = identifier
 
-            # Prevent tcv from being deallocated prematurely when no Python references
-            # are left
-            tcv.autorelease()
-
         tcv.setText(str(value))
         if icon:
             tcv.setImage(icon._impl.native)
@@ -255,7 +251,7 @@ class Tree(Widget):
             selection = []
 
             current_index = self.native_tree.selectedRowIndexes.firstIndex
-            for i in range(self.native_tree.selectedRowIndexes.count):
+            for _ in range(self.native_tree.selectedRowIndexes.count):
                 selection.append(
                     self.native_tree.itemAtRow(current_index).attrs["node"]
                 )

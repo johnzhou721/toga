@@ -14,7 +14,7 @@ from toga.fonts import (
 )
 from toga.style.pack import CENTER, COLUMN, JUSTIFY, LEFT, LTR, RIGHT, RTL
 
-from ..assertions import assert_color
+from ..assertions import assert_background_color, assert_color
 from ..data import COLORS, TEXTS
 
 # An upper bound for widths
@@ -356,7 +356,7 @@ async def test_color(widget, probe):
     "The foreground color of a widget can be changed"
     for color in COLORS:
         widget.style.color = color
-        await probe.redraw("Widget foreground color should be %s" % color)
+        await probe.redraw(f"Widget foreground color should be {color}")
         assert_color(probe.color, color)
 
 
@@ -380,10 +380,8 @@ async def test_background_color(widget, probe):
     "The background color of a widget can be set"
     for color in COLORS:
         widget.style.background_color = color
-        await probe.redraw("Widget background color should be %s" % color)
-        if not getattr(probe, "background_supports_alpha", True):
-            color.a = 1
-        assert_color(probe.background_color, color)
+        await probe.redraw(f"Widget background color should be {color}")
+        assert_background_color(probe.background_color, color)
 
 
 async def test_background_color_reset(widget, probe):
@@ -393,25 +391,28 @@ async def test_background_color_reset(widget, probe):
 
     # Set the background color to something different
     widget.style.background_color = RED
-    await probe.redraw("Widget background background color should be RED")
-    assert_color(probe.background_color, named_color(RED))
+    await probe.redraw("Widget background color should be RED")
+    assert_background_color(probe.background_color, named_color(RED))
 
     # Reset the background color, and check that it has been restored to the original
     del widget.style.background_color
-    await probe.redraw(
-        message="Widget background background color should be restored to original"
-    )
-    assert_color(probe.background_color, original)
+    await probe.redraw(message="Widget background color should be restored to original")
+    assert_background_color(probe.background_color, original)
 
 
 async def test_background_color_transparent(widget, probe):
     "Background transparency is supported"
     original = probe.background_color
-    supports_alpha = getattr(probe, "background_supports_alpha", True)
 
+    # Change the background color to transparent
     widget.style.background_color = TRANSPARENT
-    await probe.redraw("Widget background background color should be TRANSPARENT")
-    assert_color(probe.background_color, TRANSPARENT if supports_alpha else original)
+    await probe.redraw("Widget background color should be TRANSPARENT")
+    assert_background_color(probe.background_color, TRANSPARENT)
+
+    # Restore original background color
+    del widget.style.background_color
+    await probe.redraw("Widget background color should be restored to original")
+    assert_background_color(probe.background_color, original)
 
 
 async def test_text_align(widget, probe, verify_vertical_text_align):
@@ -425,7 +426,7 @@ async def test_text_align(widget, probe, verify_vertical_text_align):
 
     for text_align in [RIGHT, CENTER, JUSTIFY]:
         widget.style.text_align = text_align
-        await probe.redraw("Text alignment should be %s" % text_align)
+        await probe.redraw(f"Text alignment should be {text_align}")
         probe.assert_text_align(text_align)
         probe.assert_vertical_text_align(verify_vertical_text_align)
 
@@ -525,7 +526,7 @@ async def test_flex_horizontal_widget_size(widget, probe):
     # Container is initially a non-flex row box.
     # Initial widget size is small (but non-zero), based on content size.
     probe.assert_width(1, 300)
-    probe.assert_height(1, 55)
+    probe.assert_height(1, getattr(probe, "minimum_required_height", 55))
     original_height = probe.height
 
     # Make the widget flexible; it will expand to fill horizontal space
@@ -548,8 +549,7 @@ async def test_flex_horizontal_widget_size(widget, probe):
     # and the height hasn't changed
     await probe.redraw(
         message=(
-            "Widget width should be still the width of the screen"
-            "without height change"
+            "Widget width should be still the width of the screenwithout height change"
         )
     )
     assert probe.width > 350

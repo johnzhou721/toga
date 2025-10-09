@@ -1,7 +1,7 @@
 from toga.command import Group, Separator
 from toga.constants import WindowState
 from toga.types import Position, Size
-from toga_web.libs import create_element, js
+from toga_web.libs import create_element, create_proxy, js
 
 from .screens import Screen as ScreenImpl
 
@@ -21,6 +21,16 @@ class Window:
         app_placeholder = js.document.getElementById("app-placeholder")
         app_placeholder.appendChild(self.native)
 
+        js.document.body.addEventListener(
+            "focus", create_proxy(self.dom_on_gain_focus), True
+        )
+        js.document.body.addEventListener(
+            "blur", create_proxy(self.dom_on_lose_focus), True
+        )
+        js.document.addEventListener(
+            "visibilitychange", create_proxy(self.dom_on_visibility_change)
+        )
+
         self.set_title(title)
 
     ######################################################################
@@ -32,6 +42,18 @@ class Window:
 
     def on_size_allocate(self, widget, allocation):
         pass
+
+    def dom_on_gain_focus(self, event):
+        self.interface.on_gain_focus()
+
+    def dom_on_lose_focus(self, event):
+        self.interface.on_lose_focus()
+
+    def dom_on_visibility_change(self, event):
+        if js.document.visibilityState == "visible":
+            self.interface.on_show()
+        else:
+            self.interface.on_hide()
 
     ######################################################################
     # Window properties
@@ -103,7 +125,7 @@ class Window:
     ######################################################################
 
     def get_visible(self):
-        self.interface.not_implemented("Window.get_visible()")
+        self.interface.factory.not_implemented("Window.get_visible()")
 
     def hide(self):
         self.native.style = "visibility: hidden;"
@@ -112,7 +134,7 @@ class Window:
     # Window state
     ######################################################################
 
-    def get_window_state(self):
+    def get_window_state(self, in_progress_state=False):
         # Windows are always normal
         return WindowState.NORMAL
 
