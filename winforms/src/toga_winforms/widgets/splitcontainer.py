@@ -1,3 +1,5 @@
+import asyncio
+
 from System.Windows.Forms import (
     BorderStyle,
     Orientation,
@@ -23,8 +25,11 @@ class SplitContainer(Widget):
         self.panels = (Container(self.native.Panel1), Container(self.native.Panel2))
         self.pending_position = None
 
-    def winforms_splitter_moved(self, sender, event):
+    async def resize_content_async(self):
         self.resize_content()
+
+    def winforms_splitter_moved(self, sender, event):
+        asyncio.create_task(self.resize_content_async())
 
     def set_bounds(self, x, y, width, height):
         super().set_bounds(x, y, width, height)
