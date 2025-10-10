@@ -1,3 +1,5 @@
+import asyncio
+
 from rubicon.objc import SEL, objc_method, objc_property
 from travertino.size import at_least
 
@@ -6,6 +8,10 @@ from toga_cocoa.container import Container
 from toga_cocoa.libs import NSSplitView
 
 from .base import Widget
+
+
+async def refresh_interface(container):
+    container.content.interface.refresh()
 
 
 class TogaSplitView(NSSplitView):
@@ -17,7 +23,7 @@ class TogaSplitView(NSSplitView):
         # If the split has moved, a resize of all the content panels is required.
         for container in self.impl.sub_containers:
             if container.content:
-                container.content.interface.refresh()
+                asyncio.create_task(refresh_interface(container))
 
         # Apply any pending split
         self.performSelector(
