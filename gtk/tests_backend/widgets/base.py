@@ -10,16 +10,6 @@ from ..probe import BaseProbe
 from .properties import toga_color, toga_font
 
 
-def print_children(widget, level=0):
-    indent = "  " * level
-    print(f"{indent}{widget.__class__.__name__}")
-
-    child = widget.get_first_child()
-    while child:
-        print_children(child, level + 1)
-        child = child.get_next_sibling()
-
-
 class SimpleProbe(BaseProbe, FontMixin):
     def __init__(self, widget):
         super().__init__()
