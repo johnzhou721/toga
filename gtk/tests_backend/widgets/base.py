@@ -151,18 +151,7 @@ class SimpleProbe(BaseProbe, FontMixin):
 
     @property
     def has_focus(self):
-        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
-            return self.native.has_focus()
-        else:  # pragma: no-cover-if-gtk3
-            root = self.native.get_root()
-            focus_widget = root.get_focus()
-            if focus_widget:
-                if focus_widget == self.native:
-                    return self.native.has_focus()
-                else:
-                    return focus_widget.is_ancestor(self.native)
-            else:
-                return False
+        return self.native.has_focus()
 
     async def type_character(self, char):
         if GTK_VERSION >= (4, 0, 0):
