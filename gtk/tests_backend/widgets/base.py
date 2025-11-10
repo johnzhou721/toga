@@ -10,6 +10,16 @@ from ..probe import BaseProbe
 from .properties import toga_color, toga_font
 
 
+def print_children(widget, level=0):
+    indent = "  " * level
+    print(f"{indent}{widget.__class__.__name__}")
+
+    child = widget.get_first_child()
+    while child:
+        print_children(child, level + 1)
+        child = child.get_next_sibling()
+
+
 class SimpleProbe(BaseProbe, FontMixin):
     def __init__(self, widget):
         super().__init__()
@@ -151,7 +161,19 @@ class SimpleProbe(BaseProbe, FontMixin):
 
     @property
     def has_focus(self):
-        return self.native.has_focus()
+        if GTK_VERSION < (4, 0, 0):  # pragma: no-cover-if-gtk4
+            return self.native.has_focus()
+        else:  # pragma: no-cover-if-gtk3
+            # In GTK4, certain widgets such as Gtk.Entry are composite
+            # widgets, and the actual focus is held in the sub-widget
+            # used internally (such as Gtk.Text in this case).  Account
+            # for this case by counting having any focussed children as
+            # focussed.
+            root = self.native.get_root()
+            focus_widget = root.get_focus()
+            return focus_widget and (
+                self.native.has_focus() or focus_widget.is_ancestor(self.native)
+            )
 
     async def type_character(self, char):
         if GTK_VERSION >= (4, 0, 0):
