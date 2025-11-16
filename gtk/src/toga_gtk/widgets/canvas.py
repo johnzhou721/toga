@@ -98,7 +98,7 @@ class Canvas(Widget):
             pass
 
     def redraw(self):
-        self.native.queue_draw()
+        GLib.idle_add(Gtk.Widget.queue_draw, self.native)
 
     # Context management
     def push_context(self, cairo_context, **kwargs):
