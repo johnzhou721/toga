@@ -271,6 +271,7 @@ class Canvas(Widget):
         if line_dash is not None:
             cairo_context.set_dash(line_dash)
         cairo_context.stroke()
+        cairo_context.set_dash([])
 
     # Transformations
 
