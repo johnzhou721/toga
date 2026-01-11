@@ -92,7 +92,8 @@ class Window:
         # Note:  KDE's default theme does not respond to minimize button
         # window hints, so minimizable cannot be implemented.
 
-        self.container.native.resizeEvent = self.resizeEvent
+        self.container.native.resizeEvent = self.qt_container_resize
+        self.native.resizeEvent = self.resizeEvent
         self.toolbar_native = None
 
     def qt_close_event(self, event):
@@ -162,6 +163,8 @@ class Window:
 
     def resizeEvent(self, event):
         self.interface.on_resize()
+
+    def qt_container_resize(self, event):
         if self.interface.content:
             self.interface.content.refresh()
 
@@ -234,15 +237,20 @@ class Window:
             self._state_lock = True
             self._changeeventid += 1
             QTimer.singleShot(100, partial(self._clear_pending, self._changeeventid))
-        self._apply_state(state)
+
+        # Some state transitions are flaky on certain Linux package versions;
+        # so store the actual state transition as pending, which will be applied
+        # later.  Apply NORMAL for now.
+        self._apply_state(WindowState.NORMAL)
+
+        if IS_WAYLAND:  # pragma: no-cover-if-linux-x
+            self._pending_state_transition = state
+        else:  # pragma: no-cover-if-linux-wayland
+            self._apply_state(state)
 
     def _apply_state(self, state):
         current_state = self.get_window_state()
         current_native_state = self.native.windowState()
-        if (
-            current_state == WindowState.MINIMIZED and not IS_WAYLAND
-        ):  # pragma: no-cover-if-linux-wayland
-            self.native.showNormal()
         if current_state == state:
             self._pending_state_transition = None
             return
