@@ -238,15 +238,7 @@ class Window:
             self._changeeventid += 1
             QTimer.singleShot(100, partial(self._clear_pending, self._changeeventid))
 
-        # Some state transitions are flaky on certain Linux package versions;
-        # so store the actual state transition as pending, which will be applied
-        # later.  Apply NORMAL for now.
-        self._apply_state(WindowState.NORMAL)
-
-        if IS_WAYLAND:  # pragma: no-cover-if-linux-x
-            self._pending_state_transition = state
-        else:  # pragma: no-cover-if-linux-wayland
-            self._apply_state(state)
+        self._apply_state(state)
 
     def _apply_state(self, state):
         current_state = self.get_window_state()
@@ -254,6 +246,13 @@ class Window:
         if current_state == state:
             self._pending_state_transition = None
             return
+
+        # Go through normal first with maximized.
+        # This will retrigger MAXIMIZED transition later
+        # using a pending state transition.
+        if state == WindowState.MAXIMIZED and current_state != WindowState.NORMAL:
+            state = WindowState.NORMAL
+            self._pending_state_transition = WindowState.MAXIMIZED
 
         if current_state == WindowState.PRESENTATION:
             self.interface.screen = self._before_presentation_mode_screen
