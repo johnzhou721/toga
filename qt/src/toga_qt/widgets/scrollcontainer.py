@@ -1,10 +1,21 @@
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QScrollArea, QWidget
+from PySide6.QtCore import QEvent, QObject, Qt
+from PySide6.QtWidgets import QScrollArea
 from travertino.constants import TRANSPARENT
 from travertino.size import at_least
 
 from ..container import Container
 from .base import Widget
+
+
+class ViewportMonitor(QObject):
+    def __init__(self, impl):
+        self.impl = impl
+        super().__init__()
+
+    def eventFilter(self, obj, event):
+        if event.type() == QEvent.Resize:
+            self.impl.qt_viewport_resize()
+        return super().eventFilter(obj, event)
 
 
 class ScrollContainer(Widget):
@@ -21,15 +32,15 @@ class ScrollContainer(Widget):
             layout_native=self.native.viewport(),
             on_refresh=self.content_refreshed,
         )
-        self.native.viewport().resizeEvent = self.qt_viewport_resize
         self.native.setWidget(self.document_container.native)
         self.document_container.native.show()
+        self.monitor = ViewportMonitor(self)
+        self.native.viewport().installEventFilter(self.monitor)
 
         self.native.verticalScrollBar().valueChanged.connect(self.qt_on_changed)
         self.native.horizontalScrollBar().valueChanged.connect(self.qt_on_changed)
 
-    def qt_viewport_resize(self, *args):
-        QWidget.resizeEvent(self.native.viewport(), *args)
+    def qt_viewport_resize(self):
         if self.interface.content is not None:
             self.interface.content.refresh()
 
@@ -90,8 +101,13 @@ class ScrollContainer(Widget):
         self.interface.intrinsic.height = at_least(self.interface._MIN_HEIGHT)
 
     def content_refreshed(self, container):
-        self.document_container.native.setFixedSize(
-            self.interface.content.layout.width, self.interface.content.layout.height
-        )
-        self.document_container.native.updateGeometry()
-        self.native.viewport().adjustSize()
+        width = self.native.viewport().width()
+        height = self.native.viewport().height()
+
+        if self.interface.horizontal:
+            width = max(self.interface.content.layout.width, width)
+
+        if self.interface.vertical:
+            height = max(self.interface.content.layout.height, height)
+
+        self.document_container.native.setFixedSize(width, height)
