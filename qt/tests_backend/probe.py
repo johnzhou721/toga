@@ -48,8 +48,9 @@ class BaseProbe(DialogsMixin):
             QApplication.processEvents()
 
     def assert_image_size(self, image_size, size, screen):
+        window = toga.App.app.current_window or toga.App.app.main_window
         assert [
-            s * self.native.windowHandle().devicePixelRatio() for s in size
+            s * window._impl.native.windowHandle().devicePixelRatio() for s in size
         ] == approx(image_size, abs=1)
 
     async def type_character(self, char, *, shift=False, ctrl=False, alt=False):
