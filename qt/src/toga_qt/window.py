@@ -248,11 +248,14 @@ class Window:
             return
 
         # Go through normal first with maximized.
-        # This will retrigger MAXIMIZED transition later
+        # On Wayland, this will retrigger MAXIMIZED transition later
         # using a pending state transition.
         if state == WindowState.MAXIMIZED and current_state != WindowState.NORMAL:
-            state = WindowState.NORMAL
-            self._pending_state_transition = WindowState.MAXIMIZED
+            if IS_WAYLAND:  # pragma: no-cover-if-linux-x
+                state = WindowState.NORMAL
+                self._pending_state_transition = WindowState.MAXIMIZED
+            else:  # pragma: no-cover-if-linux-wayland
+                self._apply_state(WindowState.NORMAL)
 
         if current_state == WindowState.PRESENTATION:
             self.interface.screen = self._before_presentation_mode_screen
