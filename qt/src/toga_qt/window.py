@@ -262,10 +262,9 @@ class Window:
                 self._pending_state_transition = WindowState.MAXIMIZED
             else:  # pragma: no-cover-if-linux-wayland
                 self._apply_state(WindowState.NORMAL)
-
-        # Update current state after possible state change.
-        current_state = self.get_window_state()
-        current_native_state = self.native.windowState()
+                # Update current state after possible state change.
+                current_state = self.get_window_state()
+                current_native_state = self.native.windowState()
 
         if state == WindowState.MAXIMIZED:
             self.native.showMaximized()
