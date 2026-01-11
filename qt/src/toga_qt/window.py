@@ -247,6 +247,12 @@ class Window:
             self._pending_state_transition = None
             return
 
+        if current_state == WindowState.PRESENTATION:
+            self.interface.screen = self._before_presentation_mode_screen
+            self.native.menuBar().show()
+            del self._before_presentation_mode_screen
+            self._in_presentation_mode = False
+
         # Go through normal first with maximized.
         # On Wayland, this will retrigger MAXIMIZED transition later
         # using a pending state transition.
@@ -257,11 +263,9 @@ class Window:
             else:  # pragma: no-cover-if-linux-wayland
                 self._apply_state(WindowState.NORMAL)
 
-        if current_state == WindowState.PRESENTATION:
-            self.interface.screen = self._before_presentation_mode_screen
-            self.native.menuBar().show()
-            del self._before_presentation_mode_screen
-            self._in_presentation_mode = False
+        # Update current state after possible state change.
+        current_state = self.get_window_state()
+        current_native_state = self.native.windowState()
 
         if state == WindowState.MAXIMIZED:
             self.native.showMaximized()
