@@ -102,9 +102,9 @@ async def test_focus(widget, probe, other, other_probe, verify_focus_handlers):
 
 async def test_focus_noop(widget, probe, other, other_probe):
     "The widget cannot be given focus"
+    print("Current Toga window:", toga.App.app.current_window)
     other.focus()
     await probe.redraw("A separate widget should be given focus")
-    print("Current Toga window:", toga.App.app.current_window)
     assert not probe.has_focus
     assert other_probe.has_focus
 
