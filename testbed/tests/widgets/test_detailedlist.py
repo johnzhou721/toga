@@ -55,13 +55,14 @@ def source():
 
 @pytest.fixture
 async def widget(
+    app,
     source,
     on_select_handler,
     on_refresh_handler,
     on_primary_action_handler,
     on_secondary_action_handler,
 ):
-    return toga.DetailedList(
+    list = toga.DetailedList(
         data=source,
         accessors=("a", "b", "c"),
         missing_value="MISSING!",
@@ -73,6 +74,8 @@ async def widget(
         on_secondary_action=on_secondary_action_handler,
         style=Pack(flex=1),
     )
+    print(app.current_window)
+    return list
 
 
 test_cleanup = build_cleanup_test(
