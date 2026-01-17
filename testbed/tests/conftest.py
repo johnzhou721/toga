@@ -232,3 +232,10 @@ class ProxyTask:
 
     def done(self):
         return False
+
+def pytest_fixture_setup(fixturedef, request):
+    print(f"SETUP fixture: {fixturedef.scope} {fixturedef.argname}")
+    return fixturedef.execute(request)
+
+def pytest_fixture_post_finalizer(fixturedef, request):
+    print(f"TEARDOWN fixture: {fixturedef.scope} {fixturedef.argname}")
