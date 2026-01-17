@@ -24,7 +24,7 @@ async def widget():
 
 
 @pytest.fixture
-async def probe(main_window, widget):
+async def probe(app, main_window, widget):
     old_content = main_window.content
 
     box = toga.Box(children=[widget])
@@ -32,6 +32,7 @@ async def probe(main_window, widget):
     probe = get_probe(widget)
     await probe.redraw(f"\nConstructing {widget.__class__.__name__} probe")
     probe.assert_container(box)
+    print(app.current_window)
     yield probe
 
     main_window.content = old_content
