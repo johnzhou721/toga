@@ -25,6 +25,7 @@ async def widget():
 
 @pytest.fixture
 async def probe(app, main_window, widget):
+    print(app.current_window)
     old_content = main_window.content
 
     box = toga.Box(children=[widget])
