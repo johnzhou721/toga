@@ -134,6 +134,7 @@ async def window_cleanup(app, app_probe, main_window, main_window_probe):
     await main_window_probe.wait_for_window(
         "Resetting main_window", state=WindowState.NORMAL
     )
+    await probe.redraw("Waiting for current window to focus", wait_for=lambda: (app.current_window == main_window))
 
     yield
 
