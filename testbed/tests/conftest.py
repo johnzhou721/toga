@@ -138,6 +138,7 @@ async def window_cleanup(app, app_probe, main_window, main_window_probe):
         "Waiting for current window to focus",
         wait_for=lambda: (app.current_window == main_window),
     )
+    print(app.current_window)
 
     yield
 
