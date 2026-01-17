@@ -530,7 +530,7 @@ jobs:
       run: |
         ${{ matrix.briefcase-run-prefix }} \
           briefcase run ${{ matrix.platform }} --log --test \
-          ${{ matrix.briefcase-run-args }} --app ${{ matrix.testbed-app }} -- --ci tests/widgets/test_detailedlist.py --setup-show
+          ${{ matrix.briefcase-run-args }} --app ${{ matrix.testbed-app }} -- --ci tests/widgets/test_detailedlist.py
 
     - name: Upload Logs
       uses: actions/upload-artifact@v6.0.0
