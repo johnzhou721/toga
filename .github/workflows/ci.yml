@@ -94,12 +94,12 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v6.1.0
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: ${{ matrix.python-version }}
         allow-prereleases: true
@@ -146,12 +146,12 @@ jobs:
             tox-suffix: "-trav"
     steps:
     - name: Checkout
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Set up Python ${{ env.min_python_version }}
-      uses: actions/setup-python@v6.1.0
+      uses: actions/setup-python@v6.2.0
       with:
         # Use minimum version of python for coverage to avoid phantom branches
         # https://github.com/nedbat/coveragepy/issues/1572#issuecomment-1522546425
@@ -184,12 +184,12 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v6.1.0
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: ${{ env.min_python_version }}
 
@@ -236,6 +236,8 @@ jobs:
           briefcase-run-args: ""
           setup-python: true
           testbed-app: "testbed"
+          pre-copy-command: ""
+          copy-command: "cp -r"
 
         - backend: "macOS-x86_64"
           platform: "macOS"
@@ -484,13 +486,16 @@ jobs:
             --Xemulator=-no-snapshot
             --Xemulator=-no-audio
             --Xemulator=-no-boot-anim
-            --shutdown-on-exit
           pre-command: |
             # allow access to KVM to run the emulator
             echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
               | sudo tee /etc/udev/rules.d/99-kvm4all.rules
             sudo udevadm control --reload-rules
             sudo udevadm trigger --name-match=kvm
+            sudo apt install adb
+          app-user-data-path: /data/user/0/org.beeware.toga.testbed/files/data/
+          pre-copy-command: adb root  # has to be done *after* emulator is started
+          copy-command: adb pull
     steps:
     # GitHub runners seem to have intermittent connectivity issues.
     # See https://github.com/beeware/toga/issues/2632
@@ -498,12 +503,12 @@ jobs:
       uses: smorimoto/tune-github-hosted-runner-network@v1.0.0
 
     - name: Checkout
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v6.1.0
+      uses: actions/setup-python@v6.2.0
       if: matrix.setup-python
       with:
         python-version: "3.12"
@@ -540,14 +545,15 @@ jobs:
         path: testbed/logs/*
 
     - name: Copy App Generated User Data
-      if: failure() && matrix.backend != 'android'
+      if: failure()
       run: |
         mkdir -p testbed/app_data
-        cp -r "${{ matrix.app-user-data-path }}" testbed/app_data/testbed-app_data-${{ matrix.backend }}
+        ${{ matrix.pre-copy-command }}
+        ${{ matrix.copy-command }} "${{ matrix.app-user-data-path }}" testbed/app_data/testbed-app_data-${{ matrix.backend }}
 
     - name: Upload App Data
       uses: actions/upload-artifact@v6.0.0
-      if: failure() && matrix.backend != 'android'
+      if: failure()
       with:
         name: testbed-failure-app-data-${{ matrix.backend }}
         path: testbed/app_data/*
@@ -583,12 +589,12 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v6.0.1
+      uses: actions/checkout@v6.0.2
       with:
         fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v6.1.0
+      uses: actions/setup-python@v6.2.0
       with:
         python-version: "3.12"
 
