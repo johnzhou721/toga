@@ -110,6 +110,9 @@ WebView = "toga_winforms.widgets.webview:WebView"
 MainWindow = "toga_winforms.window:MainWindow"
 Window = "toga_winforms.window:Window"
 
+# Scaffold
+Scaffold = "toga_winforms.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 

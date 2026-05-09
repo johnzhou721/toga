@@ -108,6 +108,9 @@ WebView = "toga_android.widgets.webview:WebView"
 MainWindow = "toga_android.window:MainWindow"
 Window = "toga_android.window:Window"
 
+# Scaffold
+Scaffold = "toga_android.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 

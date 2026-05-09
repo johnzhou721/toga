@@ -150,6 +150,14 @@ class Window:
         self.interface.factory.not_implemented("Window.set_window_state()")
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold container to the web window."""
+        self.native.appendChild(scaffold.native)
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

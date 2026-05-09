@@ -206,6 +206,21 @@ class Window(Container):
                 self._in_presentation_mode = True
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold content to the activity."""
+        content_widget = scaffold.interface.content
+        if content_widget:
+            self.app.native.setContentView(content_widget.native)
+            self.native_content = content_widget.native
+        else:
+            self.native_content = None
+
+        # Toolbar coordination with app bar
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

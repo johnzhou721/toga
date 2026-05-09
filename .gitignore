@@ -43,6 +43,7 @@ mprofile_*.dat
 
 # AI tooling (SpecKit v0.8.0)
 .opencode/
+.specify/feature.json
 .specify/scripts
 .specify/templates
 .specify/extensions.yml
@@ -52,3 +53,7 @@ mprofile_*.dat
 .specify/integrations
 .specify/workflows
 .specify/workflow.yml
+.github/copilot-instructions.md
+.github/agents
+.github/prompts
+specs

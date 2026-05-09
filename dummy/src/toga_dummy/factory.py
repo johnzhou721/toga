@@ -9,6 +9,7 @@ from .hardware.location import Location
 from .icons import Icon
 from .images import Image
 from .paths import Paths
+from .scaffold import Scaffold
 from .statusicons import MenuStatusIcon, SimpleStatusIcon, StatusIconSet
 from .widgets.activityindicator import ActivityIndicator
 from .widgets.base import Widget
@@ -86,6 +87,7 @@ __all__ = [
     "TimeInput",
     "Tree",
     "WebView",
+    "Scaffold",
     # Windows
     "MainWindow",
     "Window",

@@ -98,6 +98,26 @@ class Window(LoggedObject):
         self._action("set content", widget=widget)
         self._set_value("content", widget)
 
+    def set_scaffold(self, scaffold):
+        self._action("set_scaffold", scaffold=scaffold)
+        # Extract the content widget from the scaffold for the container
+        scaffold_interface = scaffold.interface
+        content_widget = scaffold_interface.content
+
+        if content_widget:
+            self.container.content = content_widget._impl
+            # Log the action as "set content" for test compatibility
+            self._action("set content", widget=content_widget._impl)
+            self._set_value("content", content_widget._impl)
+        else:
+            self.container.content = None
+            self._action("set content", widget=None)
+            self._set_value("content", None)
+
+        # Note: Toolbar coordination would be handled here in full implementation
+        # For now, log that scaffold was attached
+        self._action("scaffold_attached", content=content_widget)
+
     ######################################################################
     # Window size
     ######################################################################

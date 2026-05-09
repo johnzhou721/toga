@@ -516,6 +516,26 @@ class Window:
                 self._apply_state(self._pending_state_transition)
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold to the window's content view."""
+        view_controller = scaffold.create_view_controller()
+        # Attach the view controller's view to the window's content view
+        self.native.contentView = view_controller.view
+        # Handle toolbar if present
+        if scaffold.toolbar:
+            # For MainWindow, set the toolbar
+            if hasattr(self, "native_toolbar"):
+                self.native_toolbar = scaffold.toolbar
+                self.native.toolbar = self.native_toolbar
+        else:
+            # Hide toolbar for regular Window
+            if hasattr(self, "native_toolbar"):
+                self.native.toolbar = None
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

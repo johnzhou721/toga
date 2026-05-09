@@ -108,6 +108,9 @@ WebView = "toga_cocoa.widgets.webview:WebView"
 MainWindow = "toga_cocoa.window:MainWindow"
 Window = "toga_cocoa.window:Window"
 
+# Scaffold
+Scaffold = "toga_cocoa.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 

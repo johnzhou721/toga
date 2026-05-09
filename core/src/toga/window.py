@@ -15,6 +15,8 @@ from toga.images import Image
 from toga.platform import get_factory
 from toga.types import Position, Size
 
+from .scaffold import Scaffold
+
 if TYPE_CHECKING:
     from toga.app import App
     from toga.images import ImageT
@@ -240,6 +242,7 @@ class Window:
         self._id = str(id if id else identifier(self))
         self._impl: Any = None
         self._content: Widget | None = None
+        self._scaffold: Scaffold | None = None
         self._closed = False
 
         self._resizable = resizable
@@ -436,24 +439,43 @@ class Window:
 
     @content.setter
     def content(self, widget: Widget) -> None:
-        # Set window of old content to None
+        # Clear old content
         if self._content:
-            self._content.window = None
+            if hasattr(self._content, "window"):
+                self._content.window = None
 
-        # Assign the content widget to the same app as the window.
-        widget.app = self.app
-
-        # Assign the content widget to the window.
-        widget.window = self
-
-        # Track our new content
+        # Store what was assigned (Scaffold or Widget)
         self._content = widget
 
-        # Manifest the widget
-        self._impl.set_content(widget._impl)
+        if isinstance(widget, Scaffold):
+            # Direct scaffold assignment - use it as-is
+            self._scaffold = widget
+            widget.app = self.app
+            widget.window = self
+        else:
+            # Widget assignment - create internal scaffold wrapper
+            scaffold = self._create_scaffold_from_widget(widget)
+            self._scaffold = scaffold
+            # Set app and window on both scaffold and widget
+            scaffold.app = self.app
+            scaffold.window = self
+            widget.app = self.app
+            widget.window = self
 
-        # Update the geometry of the widget
+        # Tell the backend implementation to use the scaffold for frame attachment
+        # Previously, window.content was used directly; now window._scaffold is used
+        self._set_scaffold_impl(self._scaffold)
+
+        # Refresh geometry
         widget.refresh()
+
+    def _create_scaffold_from_widget(self, widget: Widget) -> Scaffold:
+        """Create a scaffold wrapper for a content widget."""
+        return Scaffold(content=widget)
+
+    def _set_scaffold_impl(self, scaffold: Scaffold) -> None:
+        """Set the scaffold on the backend implementation."""
+        self._impl.set_scaffold(scaffold._impl)
 
     @property
     def widgets(self) -> FilteredWidgetRegistry:

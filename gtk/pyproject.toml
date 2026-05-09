@@ -110,6 +110,9 @@ WebView = "toga_gtk.widgets.webview:WebView"
 MainWindow = "toga_gtk.window:MainWindow"
 Window = "toga_gtk.window:Window"
 
+# Scaffold
+Scaffold = "toga_gtk.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 

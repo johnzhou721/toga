@@ -732,6 +732,8 @@ NSTrackingActiveInActiveApp = 0x40
 # NSView.h
 NSView = ObjCClass("NSView")
 
+NSViewController = ObjCClass("NSViewController")
+
 NSViewNotSizable = 0
 NSViewMinXMargin = 1
 NSViewWidthSizable = 2

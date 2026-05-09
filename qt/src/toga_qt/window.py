@@ -340,6 +340,20 @@ class Window:
 
         QApplication.processEvents()
 
+    ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold content to the QMainWindow central widget."""
+        content_widget = scaffold.interface.content
+        if content_widget:
+            self.native.setCentralWidget(content_widget._impl.native)
+        else:
+            self.native.setCentralWidget(None)
+
+        # Toolbar handling is managed by QMainWindow's toolbar areas
+
     def get_image_data(self):
         pixmap = self.container.native.grab()
         buffer = QBuffer()

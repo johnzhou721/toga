@@ -112,6 +112,9 @@ TextInput = "toga_textual.widgets.textinput:TextInput"
 MainWindow = "toga_textual.window:MainWindow"
 Window = "toga_textual.window:Window"
 
+# Scaffold
+Scaffold = "toga_textual.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 

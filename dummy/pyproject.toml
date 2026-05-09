@@ -102,6 +102,7 @@ TextInput = "toga_dummy.widgets.textinput:TextInput"
 TimeInput = "toga_dummy.widgets.timeinput:TimeInput"
 Tree = "toga_dummy.widgets.tree:Tree"
 WebView = "toga_dummy.widgets.webview:WebView"
+Scaffold = "toga_dummy.scaffold:Scaffold"
 
 # Windows
 MainWindow = "toga_dummy.window:MainWindow"

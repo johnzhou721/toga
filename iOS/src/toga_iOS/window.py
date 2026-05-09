@@ -186,6 +186,19 @@ class Window:
         pass
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold navigation controller to the window."""
+        self.native.rootViewController = scaffold.native
+        # Toolbar visibility: MainWindow shows nav bar, Window hides it
+        if hasattr(self.interface, "toolbar") and self.interface.toolbar:
+            scaffold.native.navigationBarHidden = False
+        else:
+            scaffold.native.navigationBarHidden = True
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

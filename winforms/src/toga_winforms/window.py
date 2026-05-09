@@ -382,6 +382,21 @@ class Window(Container, Scalable):
                     self._cached_window_size = None
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold content to the Form central area."""
+        content_widget = scaffold.interface.content
+        if content_widget:
+            self.native.Controls.Add(content_widget._impl.native)
+            self.native_content = content_widget._impl.native
+        else:
+            self.native_content = None
+
+        # Toolbar handling via ToolStrip management
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

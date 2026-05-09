@@ -16,6 +16,7 @@ Toga is a Python-native, OS-native GUI toolkit published under BSD-3-Clause as p
 | --- | --- |
 | `core/` | `toga-core` — the public API and shared widget contracts. |
 | `travertino/` | Style and layout engine used by `core`. |
+| `core/tests/` | Tests for the core package; uses the `dummy/` backend. |
 | `dummy/` | Reference headless backend; MUST implement the full core API so core tests can run without a GUI. |
 | `cocoa/` | macOS backend. |
 | `gtk/` | Linux/GTK backend (GTK3 stable, GTK4 experimental). |
@@ -25,14 +26,16 @@ Toga is a Python-native, OS-native GUI toolkit published under BSD-3-Clause as p
 | `textual/` | Terminal backend. |
 | `web/` | Web backend. |
 | `qt/` | Linux/Qt backend. |
-| `positron/` | Briefcase plugin for generating apps where the UI has been defined with web tools. Similar to Electron, but using Python for the web server |
 | `testbed/` | Briefcase app used to validate backend behaviour on a real platform. |
+| `positron/` | Briefcase plugin for generating apps where the UI has been defined with web tools. Similar to Electron, but using Python for the web server |
 | `docs/en/` | User and contributor documentation (MkDocs, `mkdocs.en.yml`). |
 | `changes/` | Towncrier fragments (`<issue>.<kind>.md`) — one per user-visible change. |
 | `examples/`, `demo/` | Standalone sample apps. |
 | `.specify/` | SpecKit workflow assets (constitution, templates, extensions). |
 
 Do not create new top-level directories without a clear constitutional reason; extend existing ones.
+
+When adding a widget or component registration to pyproject.toml in any of these places, one *MUST* reintsall using `pip install -e ./location --no-deps` in order to pick up the new registrations.
 
 ## Non-negotiables (from the constitution)
 
@@ -60,23 +63,26 @@ Do not replace or bypass these tools. Add new dependencies only with a clear nee
 
 Run from the repository root unless noted.
 
+- Visual Studio Code may have problem with streaming long outputs like those of testing commands; use an stderr to stdout redirect in the shell and write the output to a file for inspection if the output of a command appears to be empty; do not use `tail` for inspection, as the last lines tend to not be the root cause.
+- If nothing is output even for short outputs in Visual Studio Code, instruct the user to look for issues with resolving shell environment.
+
 ```console
 # Everything pre-commit checks (ruff, format, codespell, rumdl, etc.)
 pre-commit run --all-files
 
-# Core + Travertino test suites with coverage (MUST be 100%)
-tox -m test
+# Core + Travertino test suites with coverage (MUST be 100%), redirected to logs
+tox -m test | tee /tmp/test_output.log
 
-# Just core
-tox -m test-core
+# Just core with coverage
+tox -m test-core 2>&1 | tee /tmp/test_output.log
 
-# Just Travertino
-tox -m test-trav
+# Just Travertino with coverage
+tox -m test-trav | tee /tmp/test_output.log
 
-# A single test file against core
+# A single test file against core, WITHOUT COVERAGE
 tox -e py-cov -- core/tests/path/to/test_file.py
 
-# A single test file against Travertino
+# A single test file against Travertino, WITHOUT COVERAGE
 tox -e py-trav -- travertino/tests/path/to/test_file.py
 
 # Towncrier draft (preview assembled release notes)
@@ -91,7 +97,7 @@ tox -e docs-lint
 The core suite uses the Dummy backend. Real backend behaviour is validated through the testbed app. Install only the backend under test in your virtualenv, then:
 
 ```console
-# Desktop (from testbed/)
+# Windows and macOS (from testbed/)
 briefcase dev --app testbed --test
 
 # GTK variants (Linux)

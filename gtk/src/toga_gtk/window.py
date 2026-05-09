@@ -459,6 +459,19 @@ class Window:
                 self._in_presentation = False
 
     ######################################################################
+    # Window content and resources
+    ######################################################################
+
+    def set_scaffold(self, scaffold):
+        """Attach the scaffold container to the window."""
+        # Remove existing content
+        if self.container:
+            self.native.set_child(None)
+        # Set the scaffold's native box as the window's child
+        self.native.set_child(scaffold.native)
+        self.container = scaffold.native  # Update container reference
+
+    ######################################################################
     # Window capabilities
     ######################################################################
 

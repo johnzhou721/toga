@@ -108,6 +108,9 @@ WebView = "toga_iOS.widgets.webview:WebView"
 MainWindow = "toga_iOS.window:MainWindow"
 Window = "toga_iOS.window:Window"
 
+# Scaffold
+Scaffold = "toga_iOS.scaffold:Scaffold"
+
 [tool.setuptools_scm]
 root = ".."
 
