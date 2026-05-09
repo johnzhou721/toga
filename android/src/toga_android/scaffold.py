@@ -1,25 +1,10 @@
-from .utils import LoggedObject
-
-
-class Scaffold(LoggedObject):
-    def __init__(self, interface):
-        super().__init__()
+class Scaffold:
+    def __init__(self, interface, on_set_content=None):
         self.interface = interface
         self._content = None
-        self._toolbar = None
+        self._on_set_content = on_set_content
 
-    @property
-    def content(self):
-        return self._content
-
-    @content.setter
-    def content(self, value):
+    def set_content(self, value):
         self._content = value
-
-    @property
-    def toolbar(self):
-        return self._toolbar
-
-    @toolbar.setter
-    def toolbar(self, value):
-        self._toolbar = value
+        if self._on_set_content:
+            self._on_set_content(value)

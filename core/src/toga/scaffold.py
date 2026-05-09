@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class Scaffold:
-    """Internal scaffold widget for managing window content and toolbar layout.
+    """Scaffold widget for managing window content and toolbar layout.
 
     This widget is used internally by Toga windows to provide a consistent
     interface for content management across different backends. It serves as
@@ -31,7 +31,6 @@ class Scaffold:
         :param content: The content widget to be managed by this scaffold.
         """
         self._content = content
-        self._toolbar = None  # Placeholder for future toolbar support
         self._app = None
         self._window = None
         self._impl = get_factory().Scaffold(interface=self)
@@ -44,13 +43,10 @@ class Scaffold:
         """
         return self._content
 
-    @property
-    def toolbar(self):
-        """The toolbar managed by this scaffold.
-
-        :returns: The toolbar, or None if no toolbar has been set.
-        """
-        return self._toolbar
+    @content.setter
+    def content(self, value: Widget | None):
+        self._content = value
+        self._impl.set_content(value)
 
     @property
     def app(self):
