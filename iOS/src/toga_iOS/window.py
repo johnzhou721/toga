@@ -39,7 +39,7 @@ class Window:
         self.container.native.frame = self.native.bounds
 
         # Set the window's root controller to be the container's controller
-        self.native.rootViewController = self.container.controller
+        self.native.rootViewController = self.container.tab_bar_controller
 
         # Set the background color of the root content.
         try:
@@ -269,18 +269,15 @@ class MainWindow(Window):
         )
         # Widgets can extend into the top space with safe blurring.
         self.container.top_unset = True
+        # This mockup always have a tab bar.
+        self.container.bottom_unset = True
 
     def content_native_layout(self, container):
-        # Instead of manually computing the geometry at the top,
-        # this check is used because iOS's algorithms to place the
-        # navigation bar at an appropriate height appears to be
-        # a mystery... also, when the navigation bar metrics change,
-        # a layout appears to be triggered in the innner subview,
-        # and that's how we can catch it.
-        container.top_inset = (
-            container.controller.navigationBar.frame.origin.y
-            + container.controller.navigationBar.frame.size.height
-        )
+        # We're gonna mock this up
+        container.top_inset = container.native.safeAreaInsets.top
+        # This mockup assumes tab bar at bottom; will change in final
+        # product
+        container.bottom_inset = container.native.safeAreaInsets.bottom
         self.notify_resize(container)
 
     def create_toolbar(self):

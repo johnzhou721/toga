@@ -2,6 +2,7 @@ from rubicon.objc import objc_method, objc_property, send_super
 
 from .libs import (
     UINavigationController,
+    UITabBarController,
     UIView,
     UIViewAutoresizing,
     UIViewController,
@@ -144,10 +145,8 @@ class ControlledContainer(Container):
         """
         :param content: The widget impl that is the container's initial content.
         :param layout_native: The native widget that should be used to provide
-            size hints to the layout. This will usually be the container widget
-            itself; however, for widgets like ScrollContainer where the layout
-            needs to be computed based on a different size to what will be
-            rendered, the source of the size can be different.
+            size hints to the layout. This is what will be used to provide the
+            root view size hints.
         :param on_refresh: The callback to be notified when this container's layout is
             refreshed.
         :param on_native_layout: The callback to be notified when the container's native
@@ -252,6 +251,14 @@ class NavigationContainer(Container):
         self.controller = UINavigationController.alloc().initWithRootViewController(
             self.content_controller
         )
+
+        self.tab_bar_controller = UITabBarController.alloc().init()
+        self.tab_bar_controller.viewControllers = [self.controller]
+
+        # Add an empty view controller as the initial controller; this is for testing
+        empty_controller = UIViewController.alloc().init()
+        self.tab_bar_controller.viewControllers = [empty_controller, self.controller]
+        self.tab_bar_controller.selectedViewController = empty_controller
 
         # Set the controller's view to be the root content widget
         self.content_controller.view = self.native

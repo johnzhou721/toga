@@ -102,6 +102,7 @@ class ScrollContainerApp(toga.App):
                 order=4,
             ),
         )
+        self.on_control_press(self)
 
     def on_control_press(self, widget):
         if self.main_window.content != self.scroller:

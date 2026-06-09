@@ -95,12 +95,12 @@ class Widget:
                 height += self.container.top_inset
             # Right now, the below lines are irrelevant and lead to coverage issues,
             # as we only have a title bar to bleed over.  When constructs such as
-            # if (
-            #     self.scroll_vertical
-            #     and self.container.bottom_unset
-            #     and y + height == self.container.height
-            # ):
-            #     height += self.container.bottom_inset
+            if (
+                self.scroll_vertical
+                and self.container.bottom_unset
+                and abs(y + height - self.container.height) < 1
+            ):
+                height += self.container.bottom_inset
             # if self.scroll_horizontal and self.container.left_unset and x == 0:
             #     x -= self.container.left_inset
             #     width += self.container.left_inset
