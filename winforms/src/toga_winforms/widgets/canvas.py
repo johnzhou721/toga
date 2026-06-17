@@ -143,7 +143,10 @@ class Context:
             self.state.pen.DashStyle = DashStyle.Solid
 
     def set_line_width(self, line_width):
-        self.state.pen.Width = line_width
+        if line_width == 1:
+            self.state.pen.Width = 1.01
+        else:
+            self.state.pen.Width = line_width
 
     def set_stroke_style(self, color):
         self.state.pen.Color = native_color(color)
