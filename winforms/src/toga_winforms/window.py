@@ -3,7 +3,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
-from System.Drawing import Bitmap, Font as WinFont, Graphics, Point, Size as WinSize
+from System.Drawing import (
+    Bitmap,
+    Font as WinFont,
+    Graphics,
+    GraphicsUnit,
+    Point,
+    Size as WinSize,
+)
 from System.Drawing.Imaging import ImageFormat
 from System.IO import MemoryStream
 
@@ -20,12 +27,6 @@ from .widgets.base import Scalable
 
 if TYPE_CHECKING:  # pragma: no cover
     from toga.types import PositionT, SizeT
-
-
-# It looks like something is caching the initial scale of the primary screen, and
-# scaling all font sizes by it. Experiments show that this cache is at the level of the
-# app, not the window.
-initial_dpi_scale = ScreenImpl(WinForms.Screen.PrimaryScreen).dpi_scale
 
 
 class Window(Scalable):
@@ -87,10 +88,12 @@ class Window(Scalable):
         return self._dpi_scale
 
     def scale_font(self, native_font):
+        print(self.dpi_scale)
         return WinFont(
             native_font.FontFamily,
-            native_font.Size * (self.dpi_scale / initial_dpi_scale),
+            native_font.Size * self.dpi_scale,
             native_font.Style,
+            GraphicsUnit.Pixel,
         )
 
     ######################################################################
@@ -414,6 +417,7 @@ class MainWindow(Window):
     def update_dpi(self):
         super().update_dpi()
         if self.native.MainMenuStrip:  # pragma: no branch
+            print("Scaling mainmenu font")
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
         if self.toolbar_native:
             self.toolbar_native.Font = self.scale_font(DEFAULT_FONT)
@@ -454,6 +458,7 @@ class MainWindow(Window):
             menubar = WinForms.MenuStrip()
             self.native.Controls.Add(menubar)
             self.native.MainMenuStrip = menubar
+            print("Scaling mainmenu font")
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
             menubar.SendToBack()  # In a dock, "back" means "top".
 
