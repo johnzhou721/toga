@@ -88,7 +88,12 @@ class Window(Scalable):
         return self._dpi_scale
 
     def scale_font(self, native_font):
-        print(native_font.Unit, self.dpi_scale, native_font.Size, native_font.Size * self.dpi_scale)
+        print(
+            native_font.Unit,
+            self.dpi_scale,
+            native_font.Size,
+            native_font.Size * self.dpi_scale,
+        )
         return WinFont(
             native_font.FontFamily,
             native_font.Size * self.dpi_scale,
