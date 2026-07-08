@@ -107,7 +107,9 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
-            result = DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
+            result = DefSubclassProc(
+                HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
+            )
             self.update_dpi()
             return result
 
