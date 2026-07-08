@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
@@ -22,6 +23,8 @@ from toga.types import Position, Size
 
 from .container import Container
 from .fonts import DEFAULT_FONT
+from .libs import win32constants as wc, win32structures as ws
+from .libs.comctl32 import DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass
 from .screens import Screen as ScreenImpl
 from .widgets.base import Scalable
 
@@ -81,6 +84,39 @@ class Window(Scalable):
 
     def create(self):
         self.native = WinForms.Form()
+        self.pfn_subclass = ws.SUBCLASSPROC(self._subclass_proc)
+        self.native.HandleCreated += WeakrefCallable(self.winforms_handle_created)
+        self.native.HandleDestroyed += WeakrefCallable(self.winforms_handle_destroyed)
+        self._set_subclass()
+
+    def _set_subclass(self):
+        SetWindowSubclass(int(self.native.Handle.ToString()), self.pfn_subclass, 0, 0)
+
+    def _remove_subclass(self):
+        RemoveWindowSubclass(int(self.native.Handle.ToString()), self.pfn_subclass, 0)
+
+    def _subclass_proc(
+        self,
+        hWnd: int,
+        uMsg: int,
+        wParam: int,
+        lParam: int,
+        uIdSubclass: int,
+        dwRefData: int,
+    ) -> ws.LRESULT:
+        if uMsg == wc.WM_NCDESTROY:
+            RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
+
+        if uMsg == wc.WM_DPICHANGED:
+            print("WM_DPICHANGED")
+
+        return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
+
+    def winforms_handle_created(self, sender, event):
+        self._set_subclass()
+
+    def winforms_handle_destroyed(self, sender, event):
+        self._remove_subclass()
 
     # We cache the scale to make sure that it only changes inside update_dpi.
     @property
