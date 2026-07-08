@@ -44,8 +44,7 @@ class FontMixin:
 
     @property
     def font_size(self):
-        # Font size is always scaled by system; no custom scaling
-        # needed.
+        # SizeInPoints returns sizes converted to current DPI.
         return self.font.SizeInPoints
 
     def assert_font_size(self, expected):
