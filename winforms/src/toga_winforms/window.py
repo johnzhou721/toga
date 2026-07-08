@@ -67,7 +67,6 @@ class Window(Scalable):
         if position:
             self.set_position(position)
 
-        self.native.LocationChanged += WeakrefCallable(self.winforms_LocationChanged)
         self.native.Resize += WeakrefCallable(self.winforms_Resize)
         self.resize_content()  # Store initial size
 
@@ -108,7 +107,9 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
-            print("WM_DPICHANGED")
+            result = DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
+            self.update_dpi()
+            return result
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
 
@@ -151,10 +152,6 @@ class Window(Scalable):
             self.interface.on_resize()
             self.resize_content()
 
-        # See DisplaySettingsChanged in app.py.
-        if self.get_current_screen().dpi_scale != self._dpi_scale:
-            self.update_dpi()
-
     def winforms_FormClosing(self, sender, event):
         # If the app is exiting, do nothing; we've already approved the exit(and thus
         # the window close). This branch can't be triggered in test conditions, so it's
@@ -172,11 +169,6 @@ class Window(Scalable):
             if self.interface.closable:
                 self.interface.on_close()
             event.Cancel = True
-
-    def winforms_LocationChanged(self, sender, event):
-        # See DisplaySettingsChanged in app.py.
-        if self.get_current_screen().dpi_scale != self._dpi_scale:
-            self.update_dpi()
 
     def winforms_Activated(self, sender, event):
         self.interface.on_gain_focus()
