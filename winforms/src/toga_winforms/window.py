@@ -68,6 +68,7 @@ class Window(Scalable):
             self.set_position(position)
 
         self.native.Resize += WeakrefCallable(self.winforms_Resize)
+        self.native.ResizeEnd += WeakrefCallable(self.winforms_ResizeEnd)
         self.resize_content()  # Store initial size
 
         # Set window border style based on the window resizability setting at interface.
@@ -153,6 +154,11 @@ class Window(Scalable):
             # constitute a window resize operation.
             self.interface.on_resize()
             self.resize_content()
+
+    def winforms_ResizeEnd(self, sender, event):
+        # note?
+        if self.get_current_screen().dpi_scale != self._dpi_scale:
+            self.update_dpi()
 
     def winforms_FormClosing(self, sender, event):
         # If the app is exiting, do nothing; we've already approved the exit(and thus
