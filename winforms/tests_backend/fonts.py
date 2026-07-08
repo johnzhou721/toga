@@ -1,6 +1,6 @@
 from System.Drawing import FontFamily, SystemFonts
-
 from tests.conftest import approx
+
 from toga.fonts import (
     BOLD,
     CURSIVE,
