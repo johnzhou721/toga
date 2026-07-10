@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import ctypes
 from ctypes import cast
 from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
