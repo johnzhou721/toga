@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from ctypes import cast
 from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
@@ -113,7 +114,7 @@ class Window(Scalable):
             result = DefSubclassProc(
                 HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
             )
-            self.update_dpi()
+            asyncio.get_running_loop().call_soon(self.update_dpi)
             return result
 
         if uMsg == wc.WM_GETMINMAXINFO:
