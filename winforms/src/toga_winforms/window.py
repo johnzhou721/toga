@@ -26,6 +26,7 @@ from .container import Container
 from .fonts import DEFAULT_FONT
 from .libs import win32constants as wc, win32structures as ws
 from .libs.comctl32 import DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass
+from .libs.user32 import SendMessageW
 from .screens import Screen as ScreenImpl
 from .widgets.base import Scalable
 
@@ -264,9 +265,9 @@ class Window(Scalable):
         return 0
 
     def on_refresh(self, container):
-        # Trigger WM_GETMINMAXINFO by forcing a layout update
-        # This will be handled in the subclass proc
-        pass
+        # Force win32 to re-evaluate minimum size via WM_GETMINMAXINFO
+        # Send a dummy size message to trigger the handler
+        SendMessageW(HWND(int(self.native.Handle.ToString())), UINT(wc.WM_GETMINMAXINFO), WPARAM(0), 0)
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
