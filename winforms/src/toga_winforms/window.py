@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from ctypes import cast, pointer
 from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
 
@@ -114,7 +115,26 @@ class Window(Scalable):
             self.update_dpi()
             return result
 
+        if uMsg == wc.WM_GETMINMAXINFO:
+            self._handle_getminmaxinfo(lParam)
+
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
+
+    def _handle_getminmaxinfo(self, lParam: int):
+        """Handle WM_GETMINMAXINFO to set minimum window size."""
+        if self.interface.content is None:
+            return
+
+        layout = self.interface.content.layout
+        min_width = self.scale_in(layout.min_width) + self._decor_width()
+        min_height = (
+            self.scale_in(layout.min_height) + self._top_bars_height() + self._decor_height()
+        )
+
+        # Cast lParam to MINMAXINFO structure
+        pMinMaxInfo = cast(lParam, ws.MINMAXINFO)
+        pMinMaxInfo.contents.ptMinTrackSize.x = int(min_width)
+        pMinMaxInfo.contents.ptMinTrackSize.y = int(min_height)
 
     def winforms_handle_created(self, sender, event):
         self._set_subclass()
@@ -244,13 +264,9 @@ class Window(Scalable):
         return 0
 
     def on_refresh(self, container):
-        layout = self.interface.content.layout
-        self.native.MinimumSize = WinSize(
-            self.scale_in(layout.min_width) + self._decor_width(),
-            self.scale_in(layout.min_height)
-            + self._top_bars_height()
-            + self._decor_height(),
-        )
+        # Trigger WM_GETMINMAXINFO by forcing a layout update
+        # This will be handled in the subclass proc
+        pass
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
