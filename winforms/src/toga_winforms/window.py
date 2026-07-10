@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ctypes import cast, pointer
+from ctypes import cast
 from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
 
@@ -129,7 +129,9 @@ class Window(Scalable):
         layout = self.interface.content.layout
         min_width = self.scale_in(layout.min_width) + self._decor_width()
         min_height = (
-            self.scale_in(layout.min_height) + self._top_bars_height() + self._decor_height()
+            self.scale_in(layout.min_height)
+            + self._top_bars_height()
+            + self._decor_height()
         )
 
         # Cast lParam to MINMAXINFO structure
@@ -267,7 +269,12 @@ class Window(Scalable):
     def on_refresh(self, container):
         # Force win32 to re-evaluate minimum size via WM_GETMINMAXINFO
         # Send a dummy size message to trigger the handler
-        SendMessageW(HWND(int(self.native.Handle.ToString())), UINT(wc.WM_GETMINMAXINFO), WPARAM(0), 0)
+        SendMessageW(
+            HWND(int(self.native.Handle.ToString())),
+            UINT(wc.WM_GETMINMAXINFO),
+            WPARAM(0),
+            0,
+        )
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
