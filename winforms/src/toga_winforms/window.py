@@ -117,7 +117,12 @@ class Window(Scalable):
             return result
 
         if uMsg == wc.WM_GETMINMAXINFO:
+            # This does wrong things so we override them once again
+            result = DefSubclassProc(
+                HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
+            )
             self._handle_getminmaxinfo(lParam)
+            return result
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
 
