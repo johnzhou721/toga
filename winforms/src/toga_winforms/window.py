@@ -143,8 +143,8 @@ class Window(Scalable):
 
         # Cast lParam to MINMAXINFO structure
         pMinMaxInfo = cast(lParam, ctypes.POINTER(ws.MINMAXINFO)).contents
-        pMinMaxInfo.contents.ptMinTrackSize.x = int(min_width)
-        pMinMaxInfo.contents.ptMinTrackSize.y = int(min_height)
+        pMinMaxInfo.ptMinTrackSize.x = int(min_width)
+        pMinMaxInfo.ptMinTrackSize.y = int(min_height)
 
     def winforms_handle_created(self, sender, event):
         self._set_subclass()
