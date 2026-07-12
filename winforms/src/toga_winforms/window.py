@@ -128,12 +128,6 @@ class Window(Scalable):
         return self._dpi_scale
 
     def scale_font(self, native_font):
-        print(
-            native_font.Unit,
-            self.dpi_scale,
-            native_font.Size,
-            native_font.Size * self.dpi_scale,
-        )
         return WinFont(
             native_font.FontFamily,
             native_font.Size * self.dpi_scale,
@@ -240,14 +234,12 @@ class Window(Scalable):
 
     def on_refresh(self, container):
         layout = self.interface.content.layout
-        print(self._decor_width())
         self.native.MinimumSize = WinSize(
             self.scale_in(layout.min_width) + self._decor_width(),
             self.scale_in(layout.min_height)
             + self._top_bars_height()
             + self._decor_height(),
         )
-        print(layout.min_width)
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
@@ -495,7 +487,6 @@ class MainWindow(Window):
             menubar = WinForms.MenuStrip()
             self.native.Controls.Add(menubar)
             self.native.MainMenuStrip = menubar
-            print("Scaling mainmenu font")
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
             menubar.SendToBack()  # In a dock, "back" means "top".
 
