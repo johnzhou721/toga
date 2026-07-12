@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
+from ctypes import POINTER, cast
+from ctypes.wintypes import HWND, LPARAM, RECT, UINT, WPARAM
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
@@ -10,6 +11,7 @@ from System.Drawing import (
     Graphics,
     GraphicsUnit,
     Point,
+    Rectangle,
     Size as WinSize,
 )
 from System.Drawing.Imaging import ImageFormat
@@ -108,11 +110,12 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
-            result = DefSubclassProc(
-                HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
+            rect = cast(lParam, POINTER(RECT)).contents
+            self.native.Bounds = Rectangle(
+                rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
             )
-            self.update_dpi(GetDpiForWindow(int(self.native.Handle.ToString())) / 96)
-            return result
+            self.update_dpi()
+            return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
 
@@ -213,7 +216,7 @@ class Window(Scalable):
     def show(self):
         if self.interface.content is not None:
             self.interface.content.refresh()
-        self.update_dpi(GetDpiForWindow(int(self.native.Handle.ToString())) / 96)
+        self.update_dpi()
         self.native.Show()
 
     ######################################################################
@@ -249,8 +252,8 @@ class Window(Scalable):
             self.native.ClientSize.Height - vertical_shift,
         )
 
-    def update_dpi(self, dpi):
-        self._dpi_scale = dpi
+    def update_dpi(self):
+        self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
 
         # Update all the native fonts and determine the new preferred sizes.
         for widget in self.interface.widgets:
@@ -260,7 +263,6 @@ class Window(Scalable):
         # Then do a single layout pass.
         if self.interface.content is not None:
             self.interface.content.refresh()
-
         self.resize_content()
 
     def set_content(self, widget):
@@ -444,8 +446,8 @@ class MainWindow(Window):
         super().create()
         self.toolbar_native = None
 
-    def update_dpi(self, dpi):
-        super().update_dpi(dpi)
+    def update_dpi(self):
+        super().update_dpi()
         if self.native.MainMenuStrip:  # pragma: no branch
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
         if self.toolbar_native:
