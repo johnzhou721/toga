@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 from ctypes.wintypes import HWND, LPARAM, UINT, WPARAM
 from typing import TYPE_CHECKING
 
@@ -26,6 +25,7 @@ from .container import Container
 from .fonts import DEFAULT_FONT
 from .libs import win32constants as wc, win32structures as ws
 from .libs.comctl32 import DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass
+from .libs.user32 import GetDpiForWindow
 from .screens import Screen as ScreenImpl
 from .widgets.base import Scalable
 
@@ -42,7 +42,7 @@ class Window(Scalable):
         self._FormClosing_handler = WeakrefCallable(self.winforms_FormClosing)
         self.native.FormClosing += self._FormClosing_handler
         self.container = Container(self.native, on_refresh=self.on_refresh)
-        self._dpi_scale = self.get_current_screen().dpi_scale
+        self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
 
         self.native.MinimizeBox = self.interface.minimizable
         self.native.MaximizeBox = self.interface.resizable
@@ -69,7 +69,6 @@ class Window(Scalable):
             self.set_position(position)
 
         self.native.Resize += WeakrefCallable(self.winforms_Resize)
-        self.native.ResizeEnd += WeakrefCallable(self.winforms_ResizeEnd)
         self.resize_content()  # Store initial size
 
         # Set window border style based on the window resizability setting at interface.
@@ -112,7 +111,7 @@ class Window(Scalable):
             result = DefSubclassProc(
                 HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
             )
-            asyncio.get_running_loop().call_soon(self.update_dpi)
+            self.update_dpi(GetDpiForWindow(int(self.native.Handle.ToString())) / 96)
             return result
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
@@ -155,11 +154,6 @@ class Window(Scalable):
             # constitute a window resize operation.
             self.interface.on_resize()
             self.resize_content()
-
-    def winforms_ResizeEnd(self, sender, event):
-        # note?
-        if self.get_current_screen().dpi_scale != self._dpi_scale:
-            self.update_dpi()
 
     def winforms_FormClosing(self, sender, event):
         # If the app is exiting, do nothing; we've already approved the exit(and thus
@@ -225,7 +219,7 @@ class Window(Scalable):
     def show(self):
         if self.interface.content is not None:
             self.interface.content.refresh()
-        self.update_dpi()
+        self.update_dpi(GetDpiForWindow(int(self.native.Handle.ToString())) / 96)
         self.native.Show()
 
     ######################################################################
@@ -246,12 +240,14 @@ class Window(Scalable):
 
     def on_refresh(self, container):
         layout = self.interface.content.layout
+        print(self._decor_width())
         self.native.MinimumSize = WinSize(
             self.scale_in(layout.min_width) + self._decor_width(),
             self.scale_in(layout.min_height)
             + self._top_bars_height()
             + self._decor_height(),
         )
+        print(layout.min_width)
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
@@ -261,8 +257,8 @@ class Window(Scalable):
             self.native.ClientSize.Height - vertical_shift,
         )
 
-    def update_dpi(self):
-        self._dpi_scale = self.get_current_screen().dpi_scale
+    def update_dpi(self, dpi):
+        self._dpi_scale = dpi
 
         # Update all the native fonts and determine the new preferred sizes.
         for widget in self.interface.widgets:
@@ -456,10 +452,9 @@ class MainWindow(Window):
         super().create()
         self.toolbar_native = None
 
-    def update_dpi(self):
-        super().update_dpi()
+    def update_dpi(self, dpi):
+        super().update_dpi(dpi)
         if self.native.MainMenuStrip:  # pragma: no branch
-            print("Scaling mainmenu font")
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
         if self.toolbar_native:
             self.toolbar_native.Font = self.scale_font(DEFAULT_FONT)

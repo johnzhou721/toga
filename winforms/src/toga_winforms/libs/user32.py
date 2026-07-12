@@ -159,12 +159,18 @@ if (win_version.Major, win_version.Minor, win_version.Build) >= (10, 0, 15063):
     SetThreadDpiAwarenessContext.restype = c_void_p
     SetThreadDpiAwarenessContext.argtypes = [c_void_p]
 
+    GetDpiForWindow = user32.GetDpiForWindow
+    GetDpiForWindow.argtypes = [HWND]
+    GetDpiForWindow.restype = UINT
+
 else:  # pragma: no cover
     print(
         "WARNING: Your Windows version doesn't support DPI Awareness setting. "
         "We recommend you upgrade to at least Windows 10 version 1703."
     )
-    SetProcessDpiAwarenessContext = SetThreadDpiAwarenessContext = None
+    SetProcessDpiAwarenessContext = SetThreadDpiAwarenessContext = GetDpiForWindow = (
+        None
+    )
 
 
 # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-setfocus

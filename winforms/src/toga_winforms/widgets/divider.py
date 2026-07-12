@@ -32,14 +32,10 @@ class Divider(Widget):
 
     def rehint(self):
         if self.get_direction() == self.interface.HORIZONTAL:
-            self.interface.intrinsic.width = self.scale_out(
-                at_least(self.native.Width), ROUND_UP
-            )
+            self.interface.intrinsic.width = self.scale_out(at_least(1), ROUND_UP)
             self.interface.intrinsic.height = self.scale_out(
                 self.native.Height, ROUND_UP
             )
         else:
             self.interface.intrinsic.width = self.scale_out(self.native.Width, ROUND_UP)
-            self.interface.intrinsic.height = self.scale_out(
-                at_least(self.native.Height), ROUND_UP
-            )
+            self.interface.intrinsic.height = self.scale_out(at_least(1), ROUND_UP)
