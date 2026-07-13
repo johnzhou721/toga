@@ -24,11 +24,11 @@ class Divider(Widget):
     def set_direction(self, value):
         self._direction = value
         if value == self.interface.HORIZONTAL:
-            self.native.Height = 2
+            self.native.Height = self.scale_in(2)
             self.native.Width = 0
         else:
             self.native.Height = 0
-            self.native.Width = 2
+            self.native.Width = self.scale_in(2)
 
     def rehint(self):
         if self.get_direction() == self.interface.HORIZONTAL:

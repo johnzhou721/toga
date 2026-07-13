@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import POINTER, cast
-from ctypes.wintypes import BOOL, HWND, LPARAM, RECT, UINT, WPARAM
+from ctypes.wintypes import BOOL, DWORD, HWND, LONG, LPARAM, RECT, UINT, WPARAM
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
@@ -37,6 +37,20 @@ if TYPE_CHECKING:  # pragma: no cover
 GetWindowRect = ctypes.windll.user32.GetWindowRect
 GetWindowRect.argtypes = [HWND, ctypes.POINTER(RECT)]
 GetWindowRect.restype = BOOL
+AdjustWindowRectExForDpi = ctypes.windll.user32.AdjustWindowRectExForDpi
+AdjustWindowRectExForDpi.argtypes = [
+    ctypes.POINTER(RECT),
+    DWORD,  # dwStyle
+    BOOL,  # bMenu
+    DWORD,  # dwExStyle
+    UINT,  # dpi
+]
+AdjustWindowRectExForDpi.restype = BOOL
+GWL_STYLE = -16
+GWL_EXSTYLE = -20
+GetWindowLongW = ctypes.windll.user32.GetWindowLongW
+GetWindowLongW.argtypes = [HWND, ctypes.c_int]
+GetWindowLongW.restype = LONG
 
 
 class Window(Scalable):
@@ -133,11 +147,11 @@ class Window(Scalable):
                 wc.SWP_NOZORDER,
             )
 
-            print(
-                "SetWindowPos completed with params",
-                rect.right - rect.left,
-                rect.bottom - rect.top,
-            )
+            # print(
+            #     "SetWindowPos completed with params",
+            #     rect.right - rect.left,
+            #     rect.bottom - rect.top,
+            # )
 
             self.log_window("after SetWindowPos")
 
@@ -164,15 +178,16 @@ class Window(Scalable):
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
 
     def log_window(self, tag):
-        size = self.native.Size
-        client = self.native.ClientSize
+        pass
+        # size = self.native.Size
+        # client = self.native.ClientSize
 
-        print(
-            f"{tag}: "
-            f"window={size.Width}x{size.Height} "
-            f"client={client.Width}x{client.Height} "
-            f"decor={size.Width - client.Width}x{size.Height - client.Height}"
-        )
+        # print(
+        #     f"{tag}: "
+        #     f"window={size.Width}x{size.Height} "
+        #     f"client={client.Width}x{client.Height} "
+        #     f"decor={size.Width - client.Width}x{size.Height - client.Height}"
+        # )
 
     def _handle_getminmaxinfo(self, lParam: int):
         """Handle WM_GETMINMAXINFO to set minimum window size."""
@@ -180,8 +195,12 @@ class Window(Scalable):
             return
 
         layout = self.interface.content.layout
-        min_width = self.scale_in(layout.min_width)
-        min_height = self.scale_in(layout.min_height) + self._top_bars_height()
+        min_width = self.scale_in(layout.min_width) + self._decor_width()
+        min_height = (
+            self.scale_in(layout.min_height)
+            + self._top_bars_height()
+            + self._decor_height()
+        )
 
         # Cast lParam to MINMAXINFO structure
         pMinMaxInfo = cast(lParam, ctypes.POINTER(ws.MINMAXINFO)).contents
@@ -213,15 +232,15 @@ class Window(Scalable):
 
     def winforms_Resize(self, sender, event):
         pass
-        # self.log_window("Resize")
-        # if (self.get_window_state() != WindowState.MINIMIZED) and (
-        #     {self._previous_state, self.get_window_state()}
-        #     != {WindowState.NORMAL, WindowState.MINIMIZED}
-        # ):
-        #     # State change between NORMAL <-> MINIMIZED doesn't
-        #     # constitute a window resize operation.
-        #     self.interface.on_resize()
-        #     # self.resize_content()
+        self.log_window("Resize")
+        if (self.get_window_state() != WindowState.MINIMIZED) and (
+            {self._previous_state, self.get_window_state()}
+            != {WindowState.NORMAL, WindowState.MINIMIZED}
+        ):
+            # State change between NORMAL <-> MINIMIZED doesn't
+            # constitute a window resize operation.
+            self.interface.on_resize()
+            self.resize_content()
 
     def winforms_FormClosing(self, sender, event):
         # If the app is exiting, do nothing; we've already approved the exit(and thus
@@ -297,41 +316,66 @@ class Window(Scalable):
     # "Decor" includes the title bar and the (usually invisible) resize borders. It does
     # not include the menu bar and toolbar, which are included in the ClientSize (see
     # _top_bars_height).
+    def _window_frame_size(self, dpi=None):
+        if dpi is None:
+            dpi = GetDpiForWindow(int(self.native.Handle.ToString()))
+
+        hwnd = HWND(int(self.native.Handle.ToString()))
+
+        style = GetWindowLongW(hwnd, GWL_STYLE)
+        ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE)
+
+        rect = RECT(0, 0, 0, 0)
+
+        AdjustWindowRectExForDpi(
+            ctypes.byref(rect),
+            style,
+            False,
+            ex_style,
+            dpi,
+        )
+
+        return (
+            rect.right - rect.left,
+            rect.bottom - rect.top,
+        )
+
     def _decor_width(self):
-        return self.native.Size.Width - self.native.ClientSize.Width
+        width, _ = self._window_frame_size()
+        return width
 
     def _decor_height(self):
-        return self.native.Size.Height - self.native.ClientSize.Height
+        _, height = self._window_frame_size()
+        return height
 
     def _top_bars_height(self):
         return 0
 
     def on_refresh(self, container):
-        pass
-        # hwnd = HWND(int(self.native.Handle.ToString()))
-        # layout = self.interface.content.layout
-        # min_width = self.scale_in(layout.min_width) + self._decor_width()
-        # min_height = (
-        #     self.scale_in(layout.min_height)
-        #     + self._top_bars_height()
-        #     + self._decor_height()
-        # )
+        hwnd = HWND(int(self.native.Handle.ToString()))
+        layout = self.interface.content.layout
+        min_width = self.scale_in(layout.min_width) + self._decor_width()
+        min_height = (
+            self.scale_in(layout.min_height)
+            + self._top_bars_height()
+            + self._decor_height()
+        )
         # print(min_width, min_height)
-        # rect = RECT()
-        # GetWindowRect(hwnd, rect)
-        # width, height = rect.right-rect.left, rect.bottom-rect.top
-        # if min_width > width or min_height > height:
-        #     SetWindowPos(
-        #         hwnd,
-        #         HWND(0),
-        #         0,
-        #         0,
-        #         int(max(min_width, width)),
-        #         int(max(min_height, height)),
-        #         wc.SWP_NOMOVE | wc.SWP_NOZORDER,
-        #     )
+        rect = RECT()
+        GetWindowRect(hwnd, rect)
+        width, height = rect.right - rect.left, rect.bottom - rect.top
+        if min_width > width or min_height > height:
+            SetWindowPos(
+                hwnd,
+                HWND(0),
+                0,
+                0,
+                int(max(min_width, width)),
+                int(max(min_height, height)),
+                wc.SWP_NOMOVE | wc.SWP_NOZORDER,
+            )
 
-        # self.log_window("after on_refresh")
+        self.log_window("after on_refresh")
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
@@ -374,7 +418,7 @@ class Window(Scalable):
         )
 
     def set_size(self, size: SizeT):
-        print("Setting size")
+        # print("Setting size")
         self.native.Size = WinSize(
             self.scale_in(size[0]) + self._decor_width(),
             self.scale_in(size[1]) + self._decor_height(),
