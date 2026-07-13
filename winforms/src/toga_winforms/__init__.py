@@ -61,6 +61,7 @@ and install the .NET Desktop Runtime.""") from None
         # interpreter in emulation mode. We can use .NET Framework 4.x
         _use_dotnet_core = False
 
+
 import clr
 
 from .libs.user32 import SetProcessDpiAwarenessContext
