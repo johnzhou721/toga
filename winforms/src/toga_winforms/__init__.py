@@ -3,8 +3,19 @@ import platform
 from importlib.metadata import version
 from pathlib import Path
 
+import clr
 import clr_loader
 from pythonnet import set_runtime
+
+from .libs.user32 import SetProcessDpiAwarenessContext
+from .libs.win32constants import DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+
+if SetProcessDpiAwarenessContext is not None:
+    if not SetProcessDpiAwarenessContext(
+        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+    ):  # pragma: no cover
+        print("WARNING: Failed to set the DPI Awareness mode for the app.")
+
 
 try:
     ####################################################################################
@@ -62,11 +73,6 @@ and install the .NET Desktop Runtime.""") from None
         _use_dotnet_core = False
 
 
-import clr
-
-from .libs.user32 import SetProcessDpiAwarenessContext
-from .libs.win32constants import DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-
 # Add a reference to the Winforms assembly
 clr.AddReference("System.Windows.Forms")
 
@@ -96,11 +102,5 @@ import System.Windows.Forms as WinForms  # noqa: E402
 
 WinForms.Application.EnableVisualStyles()
 WinForms.Application.SetCompatibleTextRenderingDefault(False)
-
-if SetProcessDpiAwarenessContext is not None:
-    if not SetProcessDpiAwarenessContext(
-        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-    ):  # pragma: no cover
-        print("WARNING: Failed to set the DPI Awareness mode for the app.")
 
 __version__ = version("toga-winforms")

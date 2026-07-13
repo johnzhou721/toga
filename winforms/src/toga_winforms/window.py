@@ -11,7 +11,6 @@ from System.Drawing import (
     Graphics,
     GraphicsUnit,
     Point,
-    Rectangle,
     Size as WinSize,
 )
 from System.Drawing.Imaging import ImageFormat
@@ -27,7 +26,7 @@ from .container import Container
 from .fonts import DEFAULT_FONT
 from .libs import win32constants as wc, win32structures as ws
 from .libs.comctl32 import DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass
-from .libs.user32 import GetDpiForWindow
+from .libs.user32 import GetDpiForWindow, SetWindowPos
 from .screens import Screen as ScreenImpl
 from .widgets.base import Scalable
 
@@ -43,7 +42,7 @@ class Window(Scalable):
 
         self._FormClosing_handler = WeakrefCallable(self.winforms_FormClosing)
         self.native.FormClosing += self._FormClosing_handler
-        self.container = Container(self.native, on_refresh=self.on_refresh)
+        self.container = Container(self.native, on_refresh=lambda x: self.on_refresh)
         self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
 
         self.native.MinimizeBox = self.interface.minimizable
@@ -83,6 +82,7 @@ class Window(Scalable):
         self.native.Deactivate += WeakrefCallable(self.winforms_Deactivate)
         self.native.VisibleChanged += WeakrefCallable(self.winforms_VisibleChanged)
         self.native.SizeChanged += WeakrefCallable(self.winforms_SizeChanged)
+        self.native.AutoScaleMode = getattr(WinForms.AutoScaleMode, "None")
 
     def create(self):
         self.native = WinForms.Form()
@@ -111,13 +111,39 @@ class Window(Scalable):
 
         if uMsg == wc.WM_DPICHANGED:
             rect = cast(lParam, POINTER(RECT)).contents
-            self.native.Bounds = Rectangle(
-                rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
-            )
+
+            self.log_window("before update_dpi")
+
             self.update_dpi()
+
+            self.log_window("after update_dpi")
+
+            SetWindowPos(
+                hWnd,
+                0,
+                rect.left,
+                rect.top,
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+                wc.SWP_NOZORDER,
+            )
+
+            self.log_window("after SetWindowPos")
+
             return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
+
+    def log_window(self, tag):
+        size = self.native.Size
+        client = self.native.ClientSize
+
+        print(
+            f"{tag}: "
+            f"window={size.Width}x{size.Height} "
+            f"client={client.Width}x{client.Height} "
+            f"decor={size.Width - client.Width}x{size.Height - client.Height}"
+        )
 
     def winforms_handle_created(self, sender, event):
         self._set_subclass()
@@ -143,6 +169,7 @@ class Window(Scalable):
     ######################################################################
 
     def winforms_Resize(self, sender, event):
+        self.log_window("Resize")
         if (self.get_window_state() != WindowState.MINIMIZED) and (
             {self._previous_state, self.get_window_state()}
             != {WindowState.NORMAL, WindowState.MINIMIZED}
@@ -285,6 +312,7 @@ class Window(Scalable):
         )
 
     def set_size(self, size: SizeT):
+        print("Setting size")
         self.native.Size = WinSize(
             self.scale_in(size[0]) + self._decor_width(),
             self.scale_in(size[1]) + self._decor_height(),
