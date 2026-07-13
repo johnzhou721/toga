@@ -130,13 +130,7 @@ class Window(Scalable):
 
         if uMsg == wc.WM_DPICHANGED:
             rect = cast(lParam, POINTER(RECT)).contents
-
-            self.log_window("before update_dpi")
-
             self.update_dpi()
-
-            self.log_window("after update_dpi")
-
             SetWindowPos(
                 hWnd,
                 0,
@@ -146,66 +140,9 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
-
-            # print(
-            #     "SetWindowPos completed with params",
-            #     rect.right - rect.left,
-            #     rect.bottom - rect.top,
-            # )
-
-            self.log_window("after SetWindowPos")
-
             return 0
-
-        if uMsg == wc.WM_GETDPISCALEDSIZE:
-            rect = cast(lParam, POINTER(RECT)).contents
-            rect.right = int(
-                rect.left + (rect.right - rect.left) * (wParam / 96 / self.dpi_scale)
-            )
-            rect.bottom = int(
-                rect.top + (rect.bottom - rect.top) * (wParam / 96 / self.dpi_scale)
-            )
-            return 0
-
-        if uMsg == wc.WM_GETMINMAXINFO:
-            # This does wrong things so we override them once again
-            result = DefSubclassProc(
-                HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
-            )
-            self._handle_getminmaxinfo(lParam)
-            return result
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
-
-    def log_window(self, tag):
-        pass
-        # size = self.native.Size
-        # client = self.native.ClientSize
-
-        # print(
-        #     f"{tag}: "
-        #     f"window={size.Width}x{size.Height} "
-        #     f"client={client.Width}x{client.Height} "
-        #     f"decor={size.Width - client.Width}x{size.Height - client.Height}"
-        # )
-
-    def _handle_getminmaxinfo(self, lParam: int):
-        """Handle WM_GETMINMAXINFO to set minimum window size."""
-        if self.interface.content is None:
-            return
-
-        layout = self.interface.content.layout
-        min_width = self.scale_in(layout.min_width) + self._decor_width()
-        min_height = (
-            self.scale_in(layout.min_height)
-            + self._top_bars_height()
-            + self._decor_height()
-        )
-
-        # Cast lParam to MINMAXINFO structure
-        pMinMaxInfo = cast(lParam, ctypes.POINTER(ws.MINMAXINFO)).contents
-        pMinMaxInfo.ptMinTrackSize.x = int(min_width)
-        pMinMaxInfo.ptMinTrackSize.y = int(min_height)
 
     def winforms_handle_created(self, sender, event):
         self._set_subclass()
@@ -231,8 +168,6 @@ class Window(Scalable):
     ######################################################################
 
     def winforms_Resize(self, sender, event):
-        pass
-        self.log_window("Resize")
         if (self.get_window_state() != WindowState.MINIMIZED) and (
             {self._previous_state, self.get_window_state()}
             != {WindowState.NORMAL, WindowState.MINIMIZED}
@@ -352,7 +287,6 @@ class Window(Scalable):
         return 0
 
     def on_refresh(self, container):
-        hwnd = HWND(int(self.native.Handle.ToString()))
         layout = self.interface.content.layout
         min_width = self.scale_in(layout.min_width) + self._decor_width()
         min_height = (
@@ -360,22 +294,7 @@ class Window(Scalable):
             + self._top_bars_height()
             + self._decor_height()
         )
-        # print(min_width, min_height)
-        rect = RECT()
-        GetWindowRect(hwnd, rect)
-        width, height = rect.right - rect.left, rect.bottom - rect.top
-        if min_width > width or min_height > height:
-            SetWindowPos(
-                hwnd,
-                HWND(0),
-                0,
-                0,
-                int(max(min_width, width)),
-                int(max(min_height, height)),
-                wc.SWP_NOMOVE | wc.SWP_NOZORDER,
-            )
-
-        self.log_window("after on_refresh")
+        self.native.MinimumSize = WinSize(min_width, min_height)
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
@@ -418,7 +337,6 @@ class Window(Scalable):
         )
 
     def set_size(self, size: SizeT):
-        # print("Setting size")
         self.native.Size = WinSize(
             self.scale_in(size[0]) + self._decor_width(),
             self.scale_in(size[1]) + self._decor_height(),
