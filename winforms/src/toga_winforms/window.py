@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import ctypes
 from ctypes import POINTER, cast
-from ctypes.wintypes import HWND, LPARAM, RECT, UINT, WPARAM
+from ctypes.wintypes import BOOL, HWND, LPARAM, RECT, UINT, WPARAM
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
@@ -33,6 +34,10 @@ from .widgets.base import Scalable
 if TYPE_CHECKING:  # pragma: no cover
     from toga.types import PositionT, SizeT
 
+GetWindowRect = ctypes.windll.user32.GetWindowRect
+GetWindowRect.argtypes = [HWND, ctypes.POINTER(RECT)]
+GetWindowRect.restype = BOOL
+
 
 class Window(Scalable):
     def __init__(self, interface, title, position, size):
@@ -42,7 +47,7 @@ class Window(Scalable):
 
         self._FormClosing_handler = WeakrefCallable(self.winforms_FormClosing)
         self.native.FormClosing += self._FormClosing_handler
-        self.container = Container(self.native, on_refresh=lambda x: self.on_refresh)
+        self.container = Container(self.native, self.on_refresh)
         self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
 
         self.native.MinimizeBox = self.interface.minimizable
@@ -128,9 +133,33 @@ class Window(Scalable):
                 wc.SWP_NOZORDER,
             )
 
+            print(
+                "SetWindowPos completed with params",
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+            )
+
             self.log_window("after SetWindowPos")
 
             return 0
+
+        if uMsg == wc.WM_GETDPISCALEDSIZE:
+            rect = cast(lParam, POINTER(RECT)).contents
+            rect.right = int(
+                rect.left + (rect.right - rect.left) * (wParam / 96 / self.dpi_scale)
+            )
+            rect.bottom = int(
+                rect.top + (rect.bottom - rect.top) * (wParam / 96 / self.dpi_scale)
+            )
+            return 0
+
+        if uMsg == wc.WM_GETMINMAXINFO:
+            # This does wrong things so we override them once again
+            result = DefSubclassProc(
+                HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam)
+            )
+            self._handle_getminmaxinfo(lParam)
+            return result
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
 
@@ -144,6 +173,20 @@ class Window(Scalable):
             f"client={client.Width}x{client.Height} "
             f"decor={size.Width - client.Width}x{size.Height - client.Height}"
         )
+
+    def _handle_getminmaxinfo(self, lParam: int):
+        """Handle WM_GETMINMAXINFO to set minimum window size."""
+        if self.interface.content is None:
+            return
+
+        layout = self.interface.content.layout
+        min_width = self.scale_in(layout.min_width)
+        min_height = self.scale_in(layout.min_height) + self._top_bars_height()
+
+        # Cast lParam to MINMAXINFO structure
+        pMinMaxInfo = cast(lParam, ctypes.POINTER(ws.MINMAXINFO)).contents
+        pMinMaxInfo.ptMinTrackSize.x = int(min_width)
+        pMinMaxInfo.ptMinTrackSize.y = int(min_height)
 
     def winforms_handle_created(self, sender, event):
         self._set_subclass()
@@ -169,15 +212,16 @@ class Window(Scalable):
     ######################################################################
 
     def winforms_Resize(self, sender, event):
-        self.log_window("Resize")
-        if (self.get_window_state() != WindowState.MINIMIZED) and (
-            {self._previous_state, self.get_window_state()}
-            != {WindowState.NORMAL, WindowState.MINIMIZED}
-        ):
-            # State change between NORMAL <-> MINIMIZED doesn't
-            # constitute a window resize operation.
-            self.interface.on_resize()
-            self.resize_content()
+        pass
+        # self.log_window("Resize")
+        # if (self.get_window_state() != WindowState.MINIMIZED) and (
+        #     {self._previous_state, self.get_window_state()}
+        #     != {WindowState.NORMAL, WindowState.MINIMIZED}
+        # ):
+        #     # State change between NORMAL <-> MINIMIZED doesn't
+        #     # constitute a window resize operation.
+        #     self.interface.on_resize()
+        #     # self.resize_content()
 
     def winforms_FormClosing(self, sender, event):
         # If the app is exiting, do nothing; we've already approved the exit(and thus
@@ -263,13 +307,31 @@ class Window(Scalable):
         return 0
 
     def on_refresh(self, container):
-        layout = self.interface.content.layout
-        self.native.MinimumSize = WinSize(
-            self.scale_in(layout.min_width) + self._decor_width(),
-            self.scale_in(layout.min_height)
-            + self._top_bars_height()
-            + self._decor_height(),
-        )
+        pass
+        # hwnd = HWND(int(self.native.Handle.ToString()))
+        # layout = self.interface.content.layout
+        # min_width = self.scale_in(layout.min_width) + self._decor_width()
+        # min_height = (
+        #     self.scale_in(layout.min_height)
+        #     + self._top_bars_height()
+        #     + self._decor_height()
+        # )
+        # print(min_width, min_height)
+        # rect = RECT()
+        # GetWindowRect(hwnd, rect)
+        # width, height = rect.right-rect.left, rect.bottom-rect.top
+        # if min_width > width or min_height > height:
+        #     SetWindowPos(
+        #         hwnd,
+        #         HWND(0),
+        #         0,
+        #         0,
+        #         int(max(min_width, width)),
+        #         int(max(min_height, height)),
+        #         wc.SWP_NOMOVE | wc.SWP_NOZORDER,
+        #     )
+
+        # self.log_window("after on_refresh")
 
     def resize_content(self):
         vertical_shift = self._top_bars_height()
