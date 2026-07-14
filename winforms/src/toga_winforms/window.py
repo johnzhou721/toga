@@ -291,6 +291,14 @@ class Window(Scalable):
             + self._top_bars_height()
             + self._decor_height()
         )
+        print(
+            layout.min_width,
+            layout.min_height,
+            self.scale_in(layout.min_width),
+            self.scale_in(layout.min_height),
+            self._decor_width(),
+            self._decor_height(),
+        )
         self.native.MinimumSize = WinSize(min_width, min_height)
 
     def resize_content(self):
