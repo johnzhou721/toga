@@ -268,7 +268,7 @@ class Window(Scalable):
             style,
             False,
             ex_style,
-            dpi,
+            int(dpi),
         )
 
         return (
