@@ -135,15 +135,21 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
+            # Suspended and resumed to optimize performance by a little while we do
+            # our bookkeeping; this is mostly relevant when there are toolbars and
+            # menubars, where without these 2 the layout of the top bars will slowly
+            # change and appear unpleasant on slow systems.
             self.native.SuspendLayout()
             rect = cast(lParam, POINTER(RECT)).contents
             # The following needs to be done before SetWindowPos, as SetWindowPos
             # will trigger winforms_Resize which will use the new DPI parameters.
             self._dpi_scale = (wParam & 0xFFFF) / 96
             self.update_fonts()
+            self.native.ResumeLayout()
             # The SetWindowPos will force a new refresh, which corrects the minimum
             # introduced here in on_refresh. This is necessary as the old MinimumSize
             # will reject the new suggested size.
+            # ResumeLayout above this line will update the container size properly.
             self.native.MinimumSize = WinSize(0, 0)
             SetWindowPos(
                 hWnd,
@@ -154,7 +160,6 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
-            self.native.ResumeLayout()
             return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
