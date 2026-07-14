@@ -116,6 +116,12 @@ class Window(Scalable):
     def _remove_subclass(self):
         RemoveWindowSubclass(int(self.native.Handle.ToString()), self.pfn_subclass, 0)
 
+    def compute_window_size(self, width, height):
+        return (
+            self.scale_in(width) + self._decor_width(),
+            self.scale_in(height) + self._top_bars_height() + self._decor_height(),
+        )
+
     def _subclass_proc(
         self,
         hWnd: int,
@@ -129,8 +135,15 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
-            self.update_dpi((wParam & 0xFFFF) / 96)
             rect = cast(lParam, POINTER(RECT)).contents
+            # The following needs to be done bee-fore SetWindowPos, as SetWindowPos
+            # will trigger winforms_Resize which will use the new DPI parameters.
+            self._dpi_scale = (wParam & 0xFFFF) / 96
+            self.update_fonts()
+            # The SetWindowPos will force a new refresh, which corrects the minimum
+            # introduced here in on_refresh. This is necessary as the old MinimumSize
+            # will reject the new suggested size.
+            self.native.MinimumSize = WinSize(0, 0)
             SetWindowPos(
                 hWnd,
                 0,
@@ -139,10 +152,6 @@ class Window(Scalable):
                 rect.right - rect.left,
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
-            )
-            print(
-                rect.right - rect.left,
-                rect.bottom - rect.top,
             )
             return 0
 
@@ -243,9 +252,11 @@ class Window(Scalable):
         self.native.Icon = icon_impl.native
 
     def show(self):
+        self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
+        self.update_fonts()
         if self.interface.content is not None:
             self.interface.content.refresh()
-        self.update_dpi()
+        self.resize_content()
         self.native.Show()
 
     ######################################################################
@@ -295,14 +306,6 @@ class Window(Scalable):
             + self._top_bars_height()
             + self._decor_height()
         )
-        print(
-            layout.min_width,
-            layout.min_height,
-            self.scale_in(layout.min_width),
-            self.scale_in(layout.min_height),
-            self._decor_width(),
-            self._decor_height(),
-        )
         self.native.MinimumSize = WinSize(min_width, min_height)
 
     def resize_content(self):
@@ -313,15 +316,16 @@ class Window(Scalable):
             self.native.ClientSize.Height - vertical_shift,
         )
 
-    def update_dpi(self, dpi_scale=None):
-        if dpi_scale is None:
-            dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
-        self._dpi_scale = dpi_scale
-
+    def update_fonts(self):
         # Update all the native fonts and determine the new preferred sizes.
         for widget in self.interface.widgets:
             widget._impl.scale_font()
             widget._impl.refresh()
+
+    def update_dpi(self, dpi_scale=None):
+        if dpi_scale is None:
+            dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
+        self._dpi_scale = dpi_scale
 
         # Then do a single layout pass.
         if self.interface.content is not None:
@@ -509,15 +513,13 @@ class MainWindow(Window):
         super().create()
         self.toolbar_native = None
 
-    def update_dpi(self, dpi_scale=None):
-        if dpi_scale is None:
-            dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
-        self._dpi_scale = dpi_scale
+    def update_fonts(self):
+        # Update all the native fonts and determine the new preferred sizes.
         if self.native.MainMenuStrip:  # pragma: no branch
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
         if self.toolbar_native:
             self.toolbar_native.Font = self.scale_font(DEFAULT_FONT)
-        super().update_dpi(dpi_scale)
+        super().update_fonts()
 
     def _top_bars_height(self):
         vertical_shift = 0
