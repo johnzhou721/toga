@@ -140,6 +140,10 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
+            print(
+                rect.right - rect.left,
+                rect.bottom - rect.top,
+            )
             return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
