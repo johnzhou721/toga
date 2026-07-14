@@ -129,8 +129,8 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
+            self.update_dpi((wParam & 0xFFFF) / 96)
             rect = cast(lParam, POINTER(RECT)).contents
-            self.update_dpi()
             SetWindowPos(
                 hWnd,
                 0,
@@ -251,10 +251,7 @@ class Window(Scalable):
     # "Decor" includes the title bar and the (usually invisible) resize borders. It does
     # not include the menu bar and toolbar, which are included in the ClientSize (see
     # _top_bars_height).
-    def _window_frame_size(self, dpi=None):
-        if dpi is None:
-            dpi = GetDpiForWindow(int(self.native.Handle.ToString()))
-
+    def _window_frame_size(self, dpi):
         hwnd = HWND(int(self.native.Handle.ToString()))
 
         style = GetWindowLongW(hwnd, GWL_STYLE)
@@ -276,11 +273,11 @@ class Window(Scalable):
         )
 
     def _decor_width(self):
-        width, _ = self._window_frame_size()
+        width, _ = self._window_frame_size(self.dpi_scale * 96)
         return width
 
     def _decor_height(self):
-        _, height = self._window_frame_size()
+        _, height = self._window_frame_size(self.dpi_scale * 96)
         return height
 
     def _top_bars_height(self):
@@ -304,8 +301,10 @@ class Window(Scalable):
             self.native.ClientSize.Height - vertical_shift,
         )
 
-    def update_dpi(self):
-        self._dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
+    def update_dpi(self, dpi_scale=None):
+        if dpi_scale is None:
+            dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
+        self._dpi_scale = dpi_scale
 
         # Update all the native fonts and determine the new preferred sizes.
         for widget in self.interface.widgets:
@@ -498,13 +497,15 @@ class MainWindow(Window):
         super().create()
         self.toolbar_native = None
 
-    def update_dpi(self):
-        super().update_dpi()
+    def update_dpi(self, dpi_scale=None):
+        if dpi_scale is None:
+            dpi_scale = GetDpiForWindow(int(self.native.Handle.ToString())) / 96
+        self._dpi_scale = dpi_scale
         if self.native.MainMenuStrip:  # pragma: no branch
             self.native.MainMenuStrip.Font = self.scale_font(DEFAULT_FONT)
         if self.toolbar_native:
             self.toolbar_native.Font = self.scale_font(DEFAULT_FONT)
-        self.resize_content()
+        super().update_dpi(dpi_scale)
 
     def _top_bars_height(self):
         vertical_shift = 0
