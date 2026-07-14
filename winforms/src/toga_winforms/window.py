@@ -135,8 +135,9 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
+            self.native.SuspendLayout()
             rect = cast(lParam, POINTER(RECT)).contents
-            # The following needs to be done bee-fore SetWindowPos, as SetWindowPos
+            # The following needs to be done before SetWindowPos, as SetWindowPos
             # will trigger winforms_Resize which will use the new DPI parameters.
             self._dpi_scale = (wParam & 0xFFFF) / 96
             self.update_fonts()
@@ -153,6 +154,7 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
+            self.native.ResumeLayout()
             return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
