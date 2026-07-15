@@ -1,4 +1,4 @@
-from ctypes import POINTER, c_void_p, windll
+from ctypes import POINTER, c_int, c_void_p, windll
 from ctypes.wintypes import (
     BOOL,
     DWORD,
@@ -9,6 +9,7 @@ from ctypes.wintypes import (
     HMONITOR,
     HWND,
     INT,
+    LONG,
     LPCWSTR,
     LPPOINT,
     LPRECT,
@@ -24,6 +25,17 @@ from .win32misc import activation_context
 from .win32structures import LPARAM_OBJECT, LRESULT, UINT_PTR
 
 user32 = windll.user32
+
+
+AdjustWindowRectExForDpi = user32.AdjustWindowRectExForDpi
+AdjustWindowRectExForDpi.argtypes = [
+    POINTER(RECT),
+    DWORD,
+    BOOL,
+    DWORD,
+    UINT,
+]
+AdjustWindowRectExForDpi.restype = BOOL
 
 
 # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-appendmenuw
@@ -106,6 +118,18 @@ GetSysColor.argtypes = [INT]
 GetSystemMetrics = user32.GetSystemMetrics
 GetSystemMetrics.restype = INT
 GetSystemMetrics.argtypes = [INT]
+
+
+# https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowrect
+GetWindowRect = user32.GetWindowRect
+GetWindowRect.argtypes = [HWND, POINTER(RECT)]
+GetWindowRect.restype = BOOL
+
+
+# https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getwindowlongw
+GetWindowLongW = user32.GetWindowLongW
+GetWindowLongW.argtypes = [HWND, c_int]
+GetWindowLongW.restype = LONG
 
 
 # https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-invalidaterect

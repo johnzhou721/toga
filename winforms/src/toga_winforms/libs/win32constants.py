@@ -38,6 +38,10 @@ DT_WORD_ELLIPSIS = 0x40000
 # Edit Messages
 EM_SETCUEBANNER = 0x1501
 
+# Get Window
+GWL_STYLE = -16
+GWL_EXSTYLE = -20
+
 # Init Common Controls
 ICC_LISTVIEW_CLASSES = 0x00000001
 

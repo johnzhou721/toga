@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import ctypes
 from ctypes import POINTER, cast
-from ctypes.wintypes import BOOL, DWORD, HWND, LONG, LPARAM, RECT, UINT, WPARAM
+from ctypes.wintypes import HWND, LPARAM, RECT, UINT, WPARAM
 from typing import TYPE_CHECKING
 
 import System.Windows.Forms as WinForms
@@ -27,30 +27,17 @@ from .container import Container
 from .fonts import DEFAULT_FONT
 from .libs import win32constants as wc, win32structures as ws
 from .libs.comctl32 import DefSubclassProc, RemoveWindowSubclass, SetWindowSubclass
-from .libs.user32 import GetDpiForWindow, SetWindowPos
+from .libs.user32 import (
+    AdjustWindowRectExForDpi,
+    GetDpiForWindow,
+    GetWindowLongW,
+    SetWindowPos,
+)
 from .screens import Screen as ScreenImpl
 from .widgets.base import Scalable
 
 if TYPE_CHECKING:  # pragma: no cover
     from toga.types import PositionT, SizeT
-
-GetWindowRect = ctypes.windll.user32.GetWindowRect
-GetWindowRect.argtypes = [HWND, ctypes.POINTER(RECT)]
-GetWindowRect.restype = BOOL
-AdjustWindowRectExForDpi = ctypes.windll.user32.AdjustWindowRectExForDpi
-AdjustWindowRectExForDpi.argtypes = [
-    ctypes.POINTER(RECT),
-    DWORD,  # dwStyle
-    BOOL,  # bMenu
-    DWORD,  # dwExStyle
-    UINT,  # dpi
-]
-AdjustWindowRectExForDpi.restype = BOOL
-GWL_STYLE = -16
-GWL_EXSTYLE = -20
-GetWindowLongW = ctypes.windll.user32.GetWindowLongW
-GetWindowLongW.argtypes = [HWND, ctypes.c_int]
-GetWindowLongW.restype = LONG
 
 
 class Window(Scalable):
@@ -101,6 +88,9 @@ class Window(Scalable):
         self.native.Deactivate += WeakrefCallable(self.winforms_Deactivate)
         self.native.VisibleChanged += WeakrefCallable(self.winforms_VisibleChanged)
         self.native.SizeChanged += WeakrefCallable(self.winforms_SizeChanged)
+
+        # By default, AutoScaleMode is set to Inherit which is None for top-level forms,
+        # but explicit is better than implicit (tm)...
         self.native.AutoScaleMode = getattr(WinForms.AutoScaleMode, "None")
 
     def create(self):
@@ -135,21 +125,27 @@ class Window(Scalable):
             RemoveWindowSubclass(hWnd, self.pfn_subclass, uIdSubclass)
 
         if uMsg == wc.WM_DPICHANGED:
+            rect = cast(lParam, POINTER(RECT)).contents
+            new_dpi_scale = (wParam & 0xFFFF) / 96
+
             # Suspended and resumed to optimize performance by a little while we do
             # our bookkeeping; this is mostly relevant when there are toolbars and
             # menubars, where without these 2 the layout of the top bars will slowly
             # change and appear unpleasant on slow systems.
             self.native.SuspendLayout()
-            rect = cast(lParam, POINTER(RECT)).contents
+
             # The following needs to be done before SetWindowPos, as SetWindowPos
             # will trigger winforms_Resize which will use the new DPI parameters.
-            self._dpi_scale = (wParam & 0xFFFF) / 96
+            self._dpi_scale = new_dpi_scale
             self.update_fonts()
+
+            # Putting ResumeLayout here makes sure that the container size actually
+            # changes and a refresh is forced when we do SetWindowPos.
             self.native.ResumeLayout()
+
             # The SetWindowPos will force a new refresh, which corrects the minimum
             # introduced here in on_refresh. This is necessary as the old MinimumSize
-            # will reject the new suggested size.
-            # ResumeLayout above this line will update the container size properly.
+            # will reject the new suggested size when moving to smaller dpi screens.
             self.native.MinimumSize = WinSize(0, 0)
             SetWindowPos(
                 hWnd,
@@ -160,6 +156,13 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
+            return 0
+
+        if uMsg == wc.WM_GETDPISCALEDSIZE:
+            # .NET Core overrides this behavior when not using AutoScaleMode.Dpi,
+            # which includes AutoScaleMode.None, which we use.
+            # We thus override this again, returning 0 to always let the system
+            # handle this message.
             return 0
 
         return DefSubclassProc(HWND(hWnd), UINT(uMsg), WPARAM(wParam), LPARAM(lParam))
@@ -276,8 +279,8 @@ class Window(Scalable):
     def _window_frame_size(self, dpi):
         hwnd = HWND(int(self.native.Handle.ToString()))
 
-        style = GetWindowLongW(hwnd, GWL_STYLE)
-        ex_style = GetWindowLongW(hwnd, GWL_EXSTYLE)
+        style = GetWindowLongW(hwnd, wc.GWL_STYLE)
+        ex_style = GetWindowLongW(hwnd, wc.GWL_EXSTYLE)
 
         rect = RECT(0, 0, 0, 0)
 
