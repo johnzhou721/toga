@@ -67,11 +67,10 @@ import clr
 from .libs.user32 import SetProcessDpiAwarenessContext
 from .libs.win32constants import DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
 
-if SetProcessDpiAwarenessContext is not None:
-    if not SetProcessDpiAwarenessContext(
-        DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
-    ):  # pragma: no cover
-        print("WARNING: Failed to set the DPI Awareness mode for the app.")
+if not SetProcessDpiAwarenessContext(
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2
+):  # pragma: no cover
+    print("WARNING: Failed to set the DPI Awareness mode for the app.")
 
 # Add a reference to the Winforms assembly
 clr.AddReference("System.Windows.Forms")
