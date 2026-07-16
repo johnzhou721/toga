@@ -143,9 +143,8 @@ class Window(Scalable):
             # changes and a refresh is forced when we do SetWindowPos.
             self.native.ResumeLayout()
 
-            # The SetWindowPos will force a new refresh, which corrects the minimum
-            # introduced here in on_refresh. This is necessary as the old MinimumSize
-            # will reject the new suggested size when moving to smaller dpi screens.
+            # Set MinimummSize to 0 temporarily, so the window size setting is not
+            # immediately rejected if moving to a smaller DPI screen.
             self.native.MinimumSize = WinSize(0, 0)
             SetWindowPos(
                 hWnd,
@@ -156,6 +155,9 @@ class Window(Scalable):
                 rect.bottom - rect.top,
                 wc.SWP_NOZORDER,
             )
+            # Window position setting should force a resize, but do this defensively
+            # (and testing will not do a resize, so we need this)
+            self.resize_content(force_refresh=True)
             return 0
 
         if uMsg == wc.WM_GETDPISCALEDSIZE:
@@ -318,12 +320,13 @@ class Window(Scalable):
         )
         self.native.MinimumSize = WinSize(min_width, min_height)
 
-    def resize_content(self):
+    def resize_content(self, force_refresh=False):
         vertical_shift = self._top_bars_height()
         self.container.native_content.Location = Point(0, vertical_shift)
         self.container.resize_content(
             self.native.ClientSize.Width,
             self.native.ClientSize.Height - vertical_shift,
+            force_refresh=force_refresh,
         )
 
     def update_fonts(self):
