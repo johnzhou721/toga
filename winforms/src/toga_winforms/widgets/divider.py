@@ -25,6 +25,12 @@ class Divider(Widget):
         self._direction = value
 
     def rehint(self):
+        # Do not use self.native.Width or self.native.Height here, as rehint is not
+        # necessarily called just after set_direction, in which case the Width/Height
+        # will reflect the real width/height and be incorrectly used as minimums.
+        # This issue can be manifested when moving a window with a divider between two
+        # monitors, where the width of the divider will be incorrectly set as the new
+        # minimum.
         if self.get_direction() == self.interface.HORIZONTAL:
             self.interface.intrinsic.width = at_least(0)
             self.interface.intrinsic.height = self.scale_out(2, ROUND_UP)
