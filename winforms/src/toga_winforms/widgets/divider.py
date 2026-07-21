@@ -24,18 +24,22 @@ class Divider(Widget):
     def set_direction(self, value):
         self._direction = value
         if value == self.interface.HORIZONTAL:
-            self.native.Height = self.scale_in(2)
+            self.native.Height = 2
             self.native.Width = 0
         else:
             self.native.Height = 0
-            self.native.Width = self.scale_in(2)
+            self.native.Width = 2
 
     def rehint(self):
+        # Do not use self.native.Width or self.native.Height here, as rehint is not
+        # necessarily called just after set_direction, in which case the Width/Height
+        # will reflect the real width/height and be incorrectly used as minimums.
+        # This issue can be manifested when moving a window with a divider between two
+        # monitors, where the width of the divider will be incorrectly set as the new
+        # minimum.
         if self.get_direction() == self.interface.HORIZONTAL:
-            self.interface.intrinsic.width = self.scale_out(at_least(1), ROUND_UP)
-            self.interface.intrinsic.height = self.scale_out(
-                self.native.Height, ROUND_UP
-            )
+            self.interface.intrinsic.width = at_least(0)
+            self.interface.intrinsic.height = self.scale_out(2, ROUND_UP)
         else:
-            self.interface.intrinsic.width = self.scale_out(self.native.Width, ROUND_UP)
-            self.interface.intrinsic.height = self.scale_out(at_least(1), ROUND_UP)
+            self.interface.intrinsic.width = self.scale_out(2, ROUND_UP)
+            self.interface.intrinsic.height = at_least(0)
