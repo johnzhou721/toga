@@ -1,4 +1,5 @@
 from System.Drawing import FontFamily, SystemFonts
+from tests.conftest import approx
 
 from toga.fonts import (
     BOLD,
@@ -44,9 +45,8 @@ class FontMixin:
 
     @property
     def font_size(self):
-        # Font size is always scaled by system; no custom scaling
-        # needed.
-        return self.font.SizeInPoints
+        # SizeInPoints returns sizes converted to current DPI.
+        return approx(self.font.SizeInPoints)
 
     def assert_font_size(self, expected):
         if expected == SYSTEM_DEFAULT_FONT_SIZE:
