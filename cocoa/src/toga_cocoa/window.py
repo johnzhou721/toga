@@ -99,8 +99,7 @@ class TogaWindow(NSWindow):
     def windowDidEnterFullScreen_(self, notification) -> None:
         if (
             self.impl._pending_state_transition
-            and self.impl._pending_state_transition
-            not in {WindowState.FULLSCREEN, WindowState.PRESENTATION}
+            and self.impl._pending_state_transition != self.impl.get_window_state()
         ):
             # Directly exiting fullscreen without a delay will result in error:
             # ````2024-08-09 15:46:39.050 python[2646:37395] not in fullscreen state````
@@ -475,7 +474,8 @@ class Window:
 
             case _, WindowState.PRESENTATION:
                 self._in_presentation = True
-                self.native.toolbar.setVisible(False)
+                if self.native.toolbar:
+                    self.native.toolbar.setVisible(False)
                 self.native.toggleFullScreen(self.native)
 
             case WindowState.MAXIMIZED, WindowState.NORMAL:
@@ -490,7 +490,8 @@ class Window:
 
             case _:  # PRESENTATION -> NORMAL
                 self._in_presentation = False
-                self.native.toolbar.setVisible(True)
+                if self.native.toolbar:
+                    self.native.toolbar.setVisible(True)
                 self.native.toggleFullScreen(self.native)
 
     ######################################################################
