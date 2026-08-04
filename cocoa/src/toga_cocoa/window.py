@@ -14,11 +14,10 @@ from toga.types import Position, Size
 from toga.window import _initial_position
 from toga_cocoa.container import Container
 from toga_cocoa.libs import (
+    NSApplicationPresentationOptions,
     NSBackingStoreBuffered,
     NSImage,
     NSMutableArray,
-    NSMutableDictionary,
-    NSNumber,
     NSScreen,
     NSToolbar,
     NSToolbarItem,
@@ -100,7 +99,8 @@ class TogaWindow(NSWindow):
     def windowDidEnterFullScreen_(self, notification) -> None:
         if (
             self.impl._pending_state_transition
-            and self.impl._pending_state_transition != WindowState.FULLSCREEN
+            and self.impl._pending_state_transition
+            not in {WindowState.FULLSCREEN, WindowState.PRESENTATION}
         ):
             # Directly exiting fullscreen without a delay will result in error:
             # ````2024-08-09 15:46:39.050 python[2646:37395] not in fullscreen state````
@@ -122,6 +122,22 @@ class TogaWindow(NSWindow):
     @objc_method
     def windowDidExitFullScreen_(self, notification) -> None:
         self.impl._apply_state(self.impl._pending_state_transition)
+
+    @objc_method
+    def window_willUseFullScreenPresentationOptions_(
+        self, window, proposedOptions: int
+    ) -> int:
+        if self.impl._in_presentation:
+            # If the window is in presentation mode, then use the kiosk options.
+            return (
+                NSApplicationPresentationOptions.FullScreen
+                | NSApplicationPresentationOptions.HideDock
+                | NSApplicationPresentationOptions.HideMenuBar
+                | NSApplicationPresentationOptions.DisableAppleMenu
+                | NSApplicationPresentationOptions.DisableProcessSwitching
+            ).value
+
+        return proposedOptions
 
     ######################################################################
     # Toolbar delegate methods
@@ -239,6 +255,7 @@ class Window:
         # manage the release when no Python references are left.
         self.native.releasedWhenClosed = False
 
+        self._in_presentation = False
         # Pending Window state transition variable:
         self._pending_state_transition = None
 
@@ -313,10 +330,7 @@ class Window:
     ######################################################################
 
     def get_size(self) -> Size:
-        if self.interface.state == WindowState.PRESENTATION:
-            native_frame = self.container.native.frame
-        else:
-            native_frame = self.native.frame
+        native_frame = self.native.frame
         return Size(int(native_frame.size.width), int(native_frame.size.height))
 
     def set_size(self, size):
@@ -384,10 +398,12 @@ class Window:
     def get_window_state(self, in_progress_state=False):
         if in_progress_state and self._pending_state_transition:
             return self._pending_state_transition
-        if self.container.native.isInFullScreenMode():
-            return WindowState.PRESENTATION
         elif self.native.styleMask & NSWindowStyleMask.FullScreen:
-            return WindowState.FULLSCREEN
+            return (
+                WindowState.PRESENTATION
+                if self._in_presentation
+                else WindowState.FULLSCREEN
+            )
         elif self.native.isZoomed:
             return WindowState.MAXIMIZED
         elif self.native.isMiniaturized:
@@ -458,35 +474,9 @@ class Window:
                 self.native.toggleFullScreen(self.native)
 
             case _, WindowState.PRESENTATION:
-                self._before_presentation_mode_screen = self.interface.screen
-                opts = NSMutableDictionary.alloc().init()
-                opts.setObject(
-                    NSNumber.numberWithBool(True),
-                    forKey="NSFullScreenModeAllScreens",
-                )
-                # The widgets are actually added to window._impl.container.native,
-                # instead of window.content._impl.native. And
-                # window._impl.native.contentView is window._impl.container.native.
-                # Hence, we need to go fullscreen on window._impl.container.native
-                # instead.
-                self.container.native.enterFullScreenMode(
-                    self.interface.screen._impl.native, withOptions=opts
-                )
-
-                # Going presentation mode causes the window content to be re-homed in a
-                # NSFullScreenWindow; Teach the new parent window about its Toga
-                # representations.
-                self.container.native.window._impl = self
-                self.container.native.window.interface = self.interface
-                # Manually trigger the resize event as the original NSWindow's size
-                # remains unchanged, hence the windowDidResize_ would not be notified
-                # when the window goes into presentation mode.
-                self.interface.on_resize()
-                self.interface.content.refresh()
-
-                # No need to check for other pending states, since this is fully applied
-                # at this point.
-                self._pending_state_transition = None
+                self._in_presentation = True
+                self.native.toolbar.setVisible(False)
+                self.native.toggleFullScreen(self.native)
 
             case WindowState.MAXIMIZED, WindowState.NORMAL:
                 self.native.setIsZoomed(False)
@@ -499,21 +489,9 @@ class Window:
                 self.native.toggleFullScreen(self.native)
 
             case _:  # PRESENTATION -> NORMAL
-                opts = NSMutableDictionary.alloc().init()
-                opts.setObject(
-                    NSNumber.numberWithBool(True), forKey="NSFullScreenModeAllScreens"
-                )
-                self.container.native.exitFullScreenModeWithOptions(opts)
-                # Manually trigger the resize event as the original NSWindow's size
-                # remains unchanged, hence the windowDidResize_ would not be notified
-                # when the window goes out of the presentation mode.
-                self.interface.on_resize()
-                self.interface.content.refresh()
-
-                self.interface.screen = self._before_presentation_mode_screen
-                del self._before_presentation_mode_screen
-
-                self._apply_state(self._pending_state_transition)
+                self._in_presentation = False
+                self.native.toolbar.setVisible(True)
+                self.native.toggleFullScreen(self.native)
 
     ######################################################################
     # Window capabilities

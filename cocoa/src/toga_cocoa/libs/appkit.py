@@ -72,6 +72,32 @@ NSAboutPanelOptionVersion = NSString(
     c_void_p.in_dll(appkit, "NSAboutPanelOptionVersion")
 )
 
+
+class NSApplicationPresentationOptions(IntFlag):
+    Default = 0
+    AutoHideDock = 1 << 0  # Dock appears when moused to.
+    HideDock = 1 << 1  # Dock is entirely unavailable.
+    AutoHideMenuBar = 1 << 2  # Menu Bar appears when moused to.
+    HideMenuBar = 1 << 3  # Menu Bar is entirely unavailable.
+    DisableAppleMenu = 1 << 4  # All Apple menu items are disabled.
+    DisableProcessSwitching = 1 << 5  # Cmd+Tab UI is disabled.
+    DisableForceQuit = 1 << 6  # Cmd+Opt+Esc panel is disabled.
+    DisableSessionTermination = (
+        1 << 7
+    )  # PowerKey panel and Restart/Shut Down/Log Out disabled.
+    DisableHideApplication = 1 << 8  # Application "Hide" menu item is disabled.
+    DisableMenuBarTransparency = (
+        1 << 9
+    )  # Menu Bar's transparent appearance is disabled.
+    FullScreen = 1 << 10  # Application is in fullscreen mode.
+    AutoHideToolbar = (
+        1 << 11
+    )  # Fullscreen window toolbar is detached from window and hides/shows on rollover.
+    DisableCursorLocationAssistance = (
+        1 << 12
+    )  # "Shake mouse pointer to locate" is disabled.
+
+
 ######################################################################
 # NSAttributedString.h
 NSAttributedString = ObjCClass("NSAttributedString")
