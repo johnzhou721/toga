@@ -1,7 +1,8 @@
+from rubicon.objc import NSPoint, NSRect, NSSize
 from travertino.size import at_least
 
 from toga_cocoa.colors import native_color
-from toga_cocoa.libs import NSLeftTextAlignment, NSTextAlignment, NSTextField
+from toga_cocoa.libs import NSTextAlignment, NSTextField
 
 from .base import Widget
 
@@ -35,16 +36,8 @@ class Label(Widget):
     def rehint(self):
         # Width & height of a label is known and fixed.
 
-        # A right-aligned multiline string that contains "\n\n" confuses Cocoa's layout
-        # algorithm. Temporarily switch to left alignment to perform the size
-        # measurement, then switch back to the original value. See #4315.
-        orig_alignment = self.native.alignment
-        self.native.alignment = NSLeftTextAlignment
-        content_size = self.native.intrinsicContentSize()
-        # print("REHINT label", self, content_size.width, content_size.height)
-        self.native.alignment = orig_alignment
+        fictional_bounds = NSRect(NSPoint(0, 0), NSSize(1000000.0, 1000000.0))
+        cell_size = self.native.cell.cellSizeForBounds(fictional_bounds)
 
-        # The +1 is a hack; the label "X Translate:" gets truncated without it.
-        # See comments on #891.
-        self.interface.intrinsic.width = at_least(content_size.width + 1)
-        self.interface.intrinsic.height = content_size.height
+        self.interface.intrinsic.width = at_least(cell_size.width)
+        self.interface.intrinsic.height = cell_size.height
