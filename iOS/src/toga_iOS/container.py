@@ -1,4 +1,6 @@
-from rubicon.objc import objc_method, objc_property, send_super
+import ctypes
+
+from rubicon.objc import SEL, CGPoint, objc_method, objc_property, send_super
 
 from .libs import (
     UINavigationController,
@@ -30,6 +32,44 @@ class TogaContainerView(UIView):
         send_super(__class__, self, "safeAreaInsetsDidChange")
         if self.container.on_native_layout:
             self.container.on_native_layout(self.container)
+
+    # This is going to be very hard to test since we can't construct
+    # touch events (and mocked objects are going to be really hard to
+    # be compliant with the superclass handling)
+    # it's also cosmetic so no-covered.
+    @objc_method
+    def hitTest_withEvent_(self, point: CGPoint, event):  # pragma: no cover
+        hit_view = UIView(
+            send_super(
+                __class__,
+                self,
+                "hitTest:withEvent:",
+                point,
+                event,
+                argtypes=[CGPoint, ctypes.c_void_p],
+            )
+        )
+
+        # For MultilineTextInput (UITextView) it may return an internal
+        # subview, so we walk the chain up.
+        view = hit_view
+        while view and not view.isFirstResponder:
+            view = view.superview()
+
+        # If we found that first responder, the previous while-loop would've
+        # exited, setting view to the actual first responder.
+        # Otherwise, since it hit none, the current view has nothing to do with
+        # the first responder.
+        if not view:
+            self.performSelector(
+                SEL("alwaysEndEditing"), withObject=None, afterDelay=0.0
+            )
+
+        return hit_view
+
+    @objc_method
+    def alwaysEndEditing(self):
+        self.endEditing(True)
 
 
 class BaseContainer:
