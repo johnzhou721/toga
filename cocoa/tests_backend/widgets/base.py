@@ -60,11 +60,11 @@ class SimpleProbe(BaseProbe, FontMixin):
 
     @property
     def width(self):
-        return self.native.frame.size.width
+        return self.native.alignmentRectForFrame(self.native.frame).size.width
 
     @property
     def height(self):
-        return self.native.frame.size.height
+        return self.native.alignmentRectForFrame(self.native.frame).size.height
 
     @property
     def shrink_on_resize(self):

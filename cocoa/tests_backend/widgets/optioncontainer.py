@@ -14,14 +14,6 @@ class OptionContainerProbe(SimpleProbe):
     def assert_supports_content_based_rehint(self):
         pass
 
-    @property
-    def width(self):
-        return self.native.alignmentRectForFrame(self.native.frame).size.width
-
-    @property
-    def height(self):
-        return self.native.alignmentRectForFrame(self.native.frame).size.height
-
     def select_tab(self, index):
         self.native.selectTabViewItemAtIndex(index)
 

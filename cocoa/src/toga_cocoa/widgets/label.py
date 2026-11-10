@@ -40,6 +40,9 @@ class Label(Widget):
 
         fictional_bounds = NSRect(NSPoint(0, 0), NSSize(1000000.0, 1000000.0))
         cell_size = self.native.cell.cellSizeForBounds(fictional_bounds)
+        alignment_rect = self.native.alignmentRectForFrame(
+            NSRect(NSPoint(0, 0), cell_size)
+        )
 
-        self.interface.intrinsic.width = at_least(ceil(cell_size.width))
-        self.interface.intrinsic.height = cell_size.height
+        self.interface.intrinsic.width = at_least(ceil(alignment_rect.size.width))
+        self.interface.intrinsic.height = alignment_rect.size.height
