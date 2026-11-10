@@ -1,3 +1,5 @@
+from math import ceil
+
 from rubicon.objc import NSPoint, NSRect, NSSize
 from travertino.size import at_least
 
@@ -39,5 +41,5 @@ class Label(Widget):
         fictional_bounds = NSRect(NSPoint(0, 0), NSSize(1000000.0, 1000000.0))
         cell_size = self.native.cell.cellSizeForBounds(fictional_bounds)
 
-        self.interface.intrinsic.width = at_least(cell_size.width)
+        self.interface.intrinsic.width = at_least(ceil(cell_size.width))
         self.interface.intrinsic.height = cell_size.height
